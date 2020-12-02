@@ -1,8 +1,9 @@
 ##
 # Needed to run the service
 ##
+export schema_service_url=
+export SCHEMA_HOST=
 export storage_service_url=
-export STORAGE_SCHEMA_HOST=
 export STORAGE_QUERY_RECORD_HOST=
 export STORAGE_QUERY_RECORD_FOR_CONVERSION_HOST=
 export servicebus_namespace_name=
