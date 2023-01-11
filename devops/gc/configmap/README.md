@@ -60,7 +60,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 Run this command from within this directory:
 
 ```console
-helm install gcp-indexer-configmap .
+helm install gc-indexer-configmap .
 ```
 
 ## Uninstalling the Chart
@@ -68,7 +68,7 @@ helm install gcp-indexer-configmap .
 To uninstall the helm deployment:
 
 ```console
-helm uninstall gcp-indexer-configmap
+helm uninstall gc-indexer-configmap
 ```
 
 [Move-to-Top](#configmap-helm-chart)
