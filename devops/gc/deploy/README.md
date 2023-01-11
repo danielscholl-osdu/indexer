@@ -56,7 +56,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 Run this command from within this directory:
 
 ```console
-helm install gcp-indexer-deploy .
+helm install gc-indexer-deploy .
 ```
 
 ## Uninstalling the Chart
@@ -64,7 +64,7 @@ helm install gcp-indexer-deploy .
 To uninstall the helm deployment:
 
 ```console
-helm uninstall gcp-indexer-deploy
+helm uninstall gc-indexer-deploy
 ```
 
 [Move-to-Top](#deploy-helm-chart)
