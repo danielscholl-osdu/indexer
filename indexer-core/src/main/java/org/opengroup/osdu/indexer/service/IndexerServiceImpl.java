@@ -427,9 +427,9 @@ public class IndexerServiceImpl implements IndexerService {
         Map<String, String> asIngestedProperties = new HashMap<>();
 
         Map<String, String> propertyKeyTypeMap = new HashMap<>();
-        propertyKeyTypeMap.put("FirstPoint.X", "long");
-        propertyKeyTypeMap.put("FirstPoint.Y", "long");
-        propertyKeyTypeMap.put("FirstPoint.Z", "long");
+        propertyKeyTypeMap.put("FirstPoint.X", "double");
+        propertyKeyTypeMap.put("FirstPoint.Y", "double");
+        propertyKeyTypeMap.put("FirstPoint.Z", "double");
         propertyKeyTypeMap.put(Constants.COORDINATE_REFERENCE_SYSTEM_ID, "text");
         propertyKeyTypeMap.put(VERTICAL_COORDINATE_REFERENCE_SYSTEM_ID, "text");
         propertyKeyTypeMap.put(Constants.VERTICAL_UNIT_ID, "text");
