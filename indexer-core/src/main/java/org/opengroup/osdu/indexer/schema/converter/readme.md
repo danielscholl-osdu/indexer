@@ -278,7 +278,7 @@ Following primitive types are converted to the Storage Service Schema types (all
 "date"->"datetime"
 "int64"->"long"
 "number"->"double"
-"boolean"->"bool"
+"bool"->"boolean"
 "integer"->"int"
 ```
 

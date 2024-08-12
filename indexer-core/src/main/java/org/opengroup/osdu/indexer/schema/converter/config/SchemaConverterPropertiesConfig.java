@@ -46,7 +46,11 @@ public class SchemaConverterPropertiesConfig implements SchemaConverterConfig {
     private Map<String, String> getDefaultPrimitiveTypesMap() {
         Map<String, String> defaultPrimitiveTypesMap = new HashMap<>();
 
-        defaultPrimitiveTypesMap.put("boolean", "bool");
+        // in the earlier versions boolean was translated to bool and 
+        // this caused mapping boolean values like text as entry in StorageType entry in map is boolean
+        // in some places boolean is still presented as bool so here both are normalized to boolean
+        defaultPrimitiveTypesMap.put("boolean", "boolean");
+        defaultPrimitiveTypesMap.put("bool", "boolean");
         defaultPrimitiveTypesMap.put("number", "double");
         defaultPrimitiveTypesMap.put("date-time", "datetime");
         defaultPrimitiveTypesMap.put("date", "datetime");

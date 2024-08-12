@@ -106,6 +106,43 @@ public class PropertiesProcessorTest {
     }
 
     @Test
+    public void should_return_boolean_from_boolean_item() {
+        // in the earlier versions boolean was translated to bool and 
+        // this caused mapping boolean values like text as entry in StorageType entry in map is boolean
+        AllOfItem allOfItem = new AllOfItem();
+        JaxRsDpsLog log = Mockito.mock(JaxRsDpsLog.class);
+
+        TypeProperty property = new TypeProperty();
+        property.setType("boolean");
+
+        Map<String, TypeProperty> properties = new LinkedHashMap<>();
+        properties.put(PATH, property);
+        allOfItem.setProperties(properties);
+
+        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
+                .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
+        assertEquals("{path=" + PATH + ", kind=boolean}", res);
+    }
+
+    @Test
+    public void should_return_boolean_from_bool_item() { 
+        // StorageType entry in map is boolean not bool
+        AllOfItem allOfItem = new AllOfItem();
+        JaxRsDpsLog log = Mockito.mock(JaxRsDpsLog.class);
+
+        TypeProperty property = new TypeProperty();
+        property.setType("bool");
+
+        Map<String, TypeProperty> properties = new LinkedHashMap<>();
+        properties.put(PATH, property);
+        allOfItem.setProperties(properties);
+
+        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
+                .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
+        assertEquals("{path=" + PATH + ", kind=boolean}", res);
+    }
+
+    @Test
     public void should_return_processed_nested_array_items(){
         JaxRsDpsLog log = Mockito.mock(JaxRsDpsLog.class);
 
