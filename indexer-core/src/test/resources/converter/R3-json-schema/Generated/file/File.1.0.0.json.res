@@ -26,7 +26,7 @@
       "path": "Endian"
     },
     {
-      "kind": "bool",
+      "kind": "boolean",
       "path": "LossyCompressionIndicator"
     },
     {

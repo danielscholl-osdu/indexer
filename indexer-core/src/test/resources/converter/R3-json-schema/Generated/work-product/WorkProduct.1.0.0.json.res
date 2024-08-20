@@ -6,11 +6,11 @@
       "path": "Components"
     },
     {
-      "kind": "bool",
+      "kind": "boolean",
       "path": "IsExtendedLoad"
     },
     {
-      "kind": "bool",
+      "kind": "boolean",
       "path": "IsDiscoverable"
     },
     {
