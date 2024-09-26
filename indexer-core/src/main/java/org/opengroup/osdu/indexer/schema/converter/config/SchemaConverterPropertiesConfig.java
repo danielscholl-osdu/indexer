@@ -7,8 +7,12 @@ import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 
 @Configuration
 @ConfigurationProperties(prefix = "schema.converter")
@@ -23,6 +27,8 @@ public class SchemaConverterPropertiesConfig implements SchemaConverterConfig {
     private Set<String> processedArraysTypes = getDefaultArraysTypesForProcessing();
     private String defaultObjectArraysType = getObjectArraysDefaultType();
 
+    @Autowired
+    private IFeatureFlag featureFlagChecker;
 
     private Set<String> getDefaultSkippedDefinitions() {
         return new HashSet<>(Arrays.asList("AbstractAnyCrsFeatureCollection",
@@ -46,11 +52,16 @@ public class SchemaConverterPropertiesConfig implements SchemaConverterConfig {
     private Map<String, String> getDefaultPrimitiveTypesMap() {
         Map<String, String> defaultPrimitiveTypesMap = new HashMap<>();
 
-        // in the earlier versions boolean was translated to bool and 
-        // this caused mapping boolean values like text as entry in StorageType entry in map is boolean
-        // in some places boolean is still presented as bool so here both are normalized to boolean
-        defaultPrimitiveTypesMap.put("boolean", "boolean");
-        defaultPrimitiveTypesMap.put("bool", "boolean");
+        if (this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)) {
+            // in the earlier versions boolean was translated to bool and
+            // this caused mapping boolean values like text as entry in StorageType entry in map is boolean
+            // in some places boolean is still presented as bool so here both are normalized to boolean
+            defaultPrimitiveTypesMap.put("boolean", "boolean");
+            defaultPrimitiveTypesMap.put("bool", "boolean");
+        } else {
+            defaultPrimitiveTypesMap.put("boolean", "bool");
+        }
+
         defaultPrimitiveTypesMap.put("number", "double");
         defaultPrimitiveTypesMap.put("date-time", "datetime");
         defaultPrimitiveTypesMap.put("date", "datetime");

@@ -30,11 +30,19 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 
 public class PropertiesProcessorTest {
 
     private static final String PATH = "given_path";
     private static final String DEFINITIONS_PREFIX = "#/definitions/";
+
+    @Autowired
+    private IFeatureFlag featureFlagChecker;
 
     @Test
     public void should_fail_on_bad_reference_definition() {
@@ -121,7 +129,8 @@ public class PropertiesProcessorTest {
 
         String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
                 .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
-        assertEquals("{path=" + PATH + ", kind=boolean}", res);
+        String preferredType = (this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME))?"string":"boolean";
+        assertEquals("{{path=${PATH}, kind=${preferredType}}}", res);
     }
 
     @Test
