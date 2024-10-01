@@ -49,10 +49,16 @@ public class SchemaToStorageFormatImpl implements SchemaToStorageFormat {
 
     @Inject
     public SchemaToStorageFormatImpl(ObjectMapper objectMapper, JaxRsDpsLog log, SchemaConverterConfig schemaConverterConfig) {
+        this(objectMapper, log, schemaConverterConfig, null);
+    }
+
+    public SchemaToStorageFormatImpl(ObjectMapper objectMapper, JaxRsDpsLog log, SchemaConverterConfig schemaConverterConfig,
+                                     VirtualPropertiesSchemaCache virtualPropertiesSchemaCache) {
         Preconditions.checkNotNull(objectMapper, "objectMapper cannot be null");
 
         this.objectMapper = objectMapper;
         this.schemaConverterConfig = schemaConverterConfig;
+        if (virtualPropertiesSchemaCache != null) this.virtualPropertiesSchemaCache = virtualPropertiesSchemaCache;
     }
 
     @Override
