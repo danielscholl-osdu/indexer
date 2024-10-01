@@ -9,26 +9,46 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.springframework.stereotype.Component;
+
 import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 
-@Configuration
+@Component
 @ConfigurationProperties(prefix = "schema.converter")
 @Getter
 @Setter
 public class SchemaConverterPropertiesConfig implements SchemaConverterConfig {
 
-    private Set<String> skippedDefinitions = getDefaultSkippedDefinitions();
-    private Set<String> supportedArrayTypes = getDefaultSupportedArrayTypes();
-    private Map<String, String> specialDefinitionsMap = getDefaultSpecialDefinitionsMap();
-    private Map<String, String> primitiveTypesMap = getDefaultPrimitiveTypesMap();
-    private Set<String> processedArraysTypes = getDefaultArraysTypesForProcessing();
-    private String defaultObjectArraysType = getObjectArraysDefaultType();
+    private Set<String> skippedDefinitions;
+    private Set<String> supportedArrayTypes;
+    private Map<String, String> specialDefinitionsMap;
+    private Map<String, String> primitiveTypesMap;
+    private Set<String> processedArraysTypes;
+    private String defaultObjectArraysType;
 
     @Autowired
     private IFeatureFlag featureFlagChecker;
+
+    public SchemaConverterPropertiesConfig(IFeatureFlag flag) {
+        if (flag != null) featureFlagChecker=flag;
+        skippedDefinitions = getDefaultSkippedDefinitions();
+        supportedArrayTypes = getDefaultSupportedArrayTypes();
+        specialDefinitionsMap = getDefaultSpecialDefinitionsMap();
+        primitiveTypesMap = getDefaultPrimitiveTypesMap();
+        processedArraysTypes = getDefaultArraysTypesForProcessing();
+        defaultObjectArraysType = getObjectArraysDefaultType();
+    }
+
+    public void resetToDefault() {
+        skippedDefinitions = getDefaultSkippedDefinitions();
+        supportedArrayTypes = getDefaultSupportedArrayTypes();
+        specialDefinitionsMap = getDefaultSpecialDefinitionsMap();
+        primitiveTypesMap = getDefaultPrimitiveTypesMap();
+        processedArraysTypes = getDefaultArraysTypesForProcessing();
+        defaultObjectArraysType = getObjectArraysDefaultType();
+    }
 
     private Set<String> getDefaultSkippedDefinitions() {
         return new HashSet<>(Arrays.asList("AbstractAnyCrsFeatureCollection",
