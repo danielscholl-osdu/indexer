@@ -70,7 +70,7 @@
       "path": "hasAchievedTotalDepth"
     },
     {
-      "kind": "boolean",
+      "kind": "bool",
       "path": "isActive"
     },
     {

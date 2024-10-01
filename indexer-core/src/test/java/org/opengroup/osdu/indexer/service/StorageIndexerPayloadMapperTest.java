@@ -40,6 +40,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES_FEATURE_NAME;
 
 @RunWith(SpringRunner.class)
@@ -48,7 +49,8 @@ import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES
         GeometryDecimator.class, PointExtractor.class, GeometryConversionService.class, FeatureFlagCache.class,
         DpsHeaders.class, JobStatus.class, SchemaConverterPropertiesConfig.class, JaxRsDpsLog.class,
         ServiceAccountJwtClientMock.class, VirtualPropertiesSchemaCacheMock.class, VirtualPropertiesSchemaCache.class, RequestInfoMock.class,
-        IFeatureFlag.class, StringParser.class})
+        IFeatureFlag.class, StringParser.class}
+)
 public class StorageIndexerPayloadMapperTest {
 
     public static final String FIRST_OBJECT_INNER_PROPERTY = "FirstObjectInnerProperty";
@@ -282,6 +284,7 @@ public class StorageIndexerPayloadMapperTest {
     @Test
     public void mapDataPayloadTestAsIngestedCoordinates() {
         when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
+        when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();
@@ -318,6 +321,7 @@ public class StorageIndexerPayloadMapperTest {
     @Test
     public void mapDataPayloadTestAsIngestedCoordinatesGeographicBottomHoleLocationAndSpatialLocation() {
         when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
+        when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("GeographicBottomHoleLocation.AsIngestedCoordinates", "SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();
@@ -381,6 +385,7 @@ public class StorageIndexerPayloadMapperTest {
     @Test
     public void mapDataPayloadTestAsIngestedCoordinatesWithEmptyZCoordinate() {
         when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
+        when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();

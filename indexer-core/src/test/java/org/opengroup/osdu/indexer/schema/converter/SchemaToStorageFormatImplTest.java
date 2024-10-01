@@ -16,6 +16,7 @@ package org.opengroup.osdu.indexer.schema.converter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,10 +24,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.indexer.cache.partitionsafe.VirtualPropertiesSchemaCache;
 import org.opengroup.osdu.indexer.schema.converter.config.SchemaConverterPropertiesConfig;
 import org.opengroup.osdu.indexer.schema.converter.exeption.SchemaProcessingException;
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
+
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -42,10 +47,10 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringRunner.class)
+@Configuration
 public class SchemaToStorageFormatImplTest {
 
     private static final String KIND = "KIND_VAL";
@@ -54,17 +59,22 @@ public class SchemaToStorageFormatImplTest {
 
     private JaxRsDpsLog jaxRsDpsLog = Mockito.mock(JaxRsDpsLog.class);
 
-    @InjectMocks
-    private SchemaToStorageFormatImpl schemaToStorageFormatImpl
-            = new SchemaToStorageFormatImpl(objectMapper, jaxRsDpsLog
-            , new SchemaConverterPropertiesConfig());
+    private SchemaToStorageFormatImpl schemaToStorageFormatImpl;
 
-    @Mock
     private VirtualPropertiesSchemaCache virtualPropertiesSchemaCache;
+
+    private IFeatureFlag featureFlag;
 
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
+        featureFlag = Mockito.mock(IFeatureFlag.class);
+        when(featureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
+        virtualPropertiesSchemaCache = Mockito.mock(VirtualPropertiesSchemaCache.class);
+//        when(virtualPropertiesSchemaCache.put(Mockito.anyString(), Mockito.any())).doNothing();
+        schemaToStorageFormatImpl
+                = new SchemaToStorageFormatImpl(objectMapper, jaxRsDpsLog,
+                    new SchemaConverterPropertiesConfig(featureFlag), virtualPropertiesSchemaCache);
     }
 
     @Test
@@ -175,9 +185,17 @@ public class SchemaToStorageFormatImplTest {
         String json = getSchemaFromSchemaService(filename);
 
         Map<String, Object> converted = schemaToStorageFormatImpl.convertToMap(json, kind);
-        Map<String, Object> expected = getStorageSchema(filename + ".res");
+        String resource = filename +
+                ((featureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME))?".FF":"")+
+                ".res";
+        if (!existsStorageSchema(resource)) resource = filename + ".res";
+        Map<String, Object> expected = getStorageSchema(resource);
 
         compareSchemas(expected, converted, filename);
+    }
+
+    private boolean existsStorageSchema(String s) {
+        return null != this.getClass().getResource(s);
     }
 
     private Map<String, Object> getStorageSchema(String s) {

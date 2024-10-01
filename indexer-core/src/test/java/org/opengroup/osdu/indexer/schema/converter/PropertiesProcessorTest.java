@@ -15,7 +15,9 @@
 package org.opengroup.osdu.indexer.schema.converter;
 
 import com.google.common.collect.ImmutableMap;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.indexer.schema.converter.config.SchemaConverterPropertiesConfig;
@@ -25,48 +27,66 @@ import org.opengroup.osdu.indexer.schema.converter.tags.Definitions;
 import org.opengroup.osdu.indexer.schema.converter.tags.Items;
 import org.opengroup.osdu.indexer.schema.converter.tags.TypeProperty;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
-
+@RunWith(SpringRunner.class)
+@Import({IFeatureFlag.class})
+@ContextConfiguration(classes = {PropertiesProcessorTest.class, IFeatureFlag.class})
+@SpringBootTest(classes = {IFeatureFlag.class})
 public class PropertiesProcessorTest {
 
     private static final String PATH = "given_path";
     private static final String DEFINITIONS_PREFIX = "#/definitions/";
 
-    @Autowired
+    @MockBean
     private IFeatureFlag featureFlagChecker;
+
+    private SchemaConverterPropertiesConfig schemaConverterConfig;
+
+    @Before
+    public void setup() throws IOException {
+        initMocks(this);
+        schemaConverterConfig = new SchemaConverterPropertiesConfig(featureFlagChecker);
+    }
 
     @Test
     public void should_fail_on_bad_reference_definition() {
-        PropertiesProcessor propertiesProcessor = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig());
+        PropertiesProcessor propertiesProcessor = new PropertiesProcessor(Mockito.mock(Definitions.class),
+                schemaConverterConfig);
         propertiesProcessor.processRef(DEFINITIONS_PREFIX + "unknownDefinition");
         assertEquals(1, propertiesProcessor.getErrors().size());
     }
 
     @Test
     public void should_fail_on_wrong_definition_format() {
-        PropertiesProcessor propertiesProcessor = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig());
+        PropertiesProcessor propertiesProcessor = new PropertiesProcessor(Mockito.mock(Definitions.class), schemaConverterConfig);
         propertiesProcessor.processRef("unknownDefinition");
         assertEquals(1, propertiesProcessor.getErrors().size());
     }
 
     @Test
     public void should_not_process_special_reference() {
-        assertFalse(new PropertiesProcessor(null, new SchemaConverterPropertiesConfig())
+        assertFalse(new PropertiesProcessor(null, schemaConverterConfig)
                 .processRef(DEFINITIONS_PREFIX + "a:b:anyCrsGeoJsonFeatureCollection:1.0.0").findAny().isPresent());
     }
 
     @Test
     public void should_return_special_type() {
-        String res = new PropertiesProcessor(null, PATH, new SchemaConverterPropertiesConfig())
+        String res = new PropertiesProcessor(null, PATH, schemaConverterConfig)
                 .processRef(DEFINITIONS_PREFIX + "a:b:core_dl_geopoint:1.0.0").map(Object::toString).reduce("", String::concat);
         assertEquals("{path=" + PATH + ", kind=core:dl:geopoint:1.0.0}", res);
     }
@@ -90,7 +110,7 @@ public class PropertiesProcessorTest {
         String defName = "a:b:defName:1.0.0";
         definitions.add(defName, definition);
 
-        String res = new PropertiesProcessor(definitions, PATH, new SchemaConverterPropertiesConfig())
+        String res = new PropertiesProcessor(definitions, PATH, schemaConverterConfig)
                 .processRef(DEFINITIONS_PREFIX + defName).map(Object::toString).reduce("", String::concat);
         assertEquals(res, "{path="+ PATH + "." + propertyName + ", kind=string}");
     }
@@ -108,15 +128,29 @@ public class PropertiesProcessorTest {
         properties.put(PATH, property);
         allOfItem.setProperties(properties);
 
-        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
+        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), schemaConverterConfig)
                 .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
         assertEquals("{path=" + PATH + ", kind=int}", res);
     }
 
     @Test
-    public void should_return_boolean_from_boolean_item() {
+    public void should_return_boolean_from_boolean_item_FF_OFF() {
         // in the earlier versions boolean was translated to bool and 
         // this caused mapping boolean values like text as entry in StorageType entry in map is boolean
+        internal_should_return_boolean_from_boolean_item(false);
+    }
+
+    @Test
+    public void should_return_boolean_from_boolean_item_FF_ON() {
+        // in the earlier versions boolean was translated to bool and
+        // this caused mapping boolean values like text as entry in StorageType entry in map is boolean
+        internal_should_return_boolean_from_boolean_item(true);
+    }
+
+    private void internal_should_return_boolean_from_boolean_item(boolean ffFlag) {
+        when(this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(ffFlag);
+        when(schemaConverterConfig.getFeatureFlagChecker().isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(ffFlag);
+        schemaConverterConfig.resetToDefault();
         AllOfItem allOfItem = new AllOfItem();
         JaxRsDpsLog log = Mockito.mock(JaxRsDpsLog.class);
 
@@ -127,10 +161,11 @@ public class PropertiesProcessorTest {
         properties.put(PATH, property);
         allOfItem.setProperties(properties);
 
-        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
-                .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
-        String preferredType = (this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME))?"string":"boolean";
-        assertEquals("{{path=${PATH}, kind=${preferredType}}}", res);
+        assertEquals(
+                "{path="+PATH+", kind="+ (ffFlag?"boolean":"bool")+"}",
+                new PropertiesProcessor(Mockito.mock(Definitions.class), schemaConverterConfig)
+                        .processItem(allOfItem).map(Object::toString).reduce("", String::concat)
+        );
     }
 
     @Test
@@ -146,9 +181,9 @@ public class PropertiesProcessorTest {
         properties.put(PATH, property);
         allOfItem.setProperties(properties);
 
-        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
+        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), schemaConverterConfig)
                 .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
-        assertEquals("{path=" + PATH + ", kind=boolean}", res);
+        assertEquals("{path=" + PATH + ", kind=bool}", res);
     }
 
     @Test
@@ -174,7 +209,7 @@ public class PropertiesProcessorTest {
         AllOfItem allOfItem = new AllOfItem();
         allOfItem.setProperties(allOfItemProperties);
 
-        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
+        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), schemaConverterConfig)
             .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
         assertEquals("{path="+ PATH + ", kind=nested, properties=[{path="+ PATH + ", kind=int}]}",res);
     }
@@ -202,7 +237,7 @@ public class PropertiesProcessorTest {
         AllOfItem allOfItem = new AllOfItem();
         allOfItem.setProperties(allOfItemProperties);
 
-        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
+        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), schemaConverterConfig)
             .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
         assertEquals("{path="+ PATH + ", kind=flattened}",res);
     }
@@ -229,7 +264,7 @@ public class PropertiesProcessorTest {
         AllOfItem allOfItem = new AllOfItem();
         allOfItem.setProperties(allOfItemProperties);
 
-        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
+        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), schemaConverterConfig)
             .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
         assertEquals("{path="+ PATH + ", kind=[]object}",res);
     }
@@ -251,7 +286,7 @@ public class PropertiesProcessorTest {
         AllOfItem allOfItem = new AllOfItem();
         allOfItem.setProperties(allOfItemProperties);
 
-        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), new SchemaConverterPropertiesConfig())
+        String res = new PropertiesProcessor(Mockito.mock(Definitions.class), schemaConverterConfig)
             .processItem(allOfItem).map(Object::toString).reduce("", String::concat);
         assertEquals("{path="+ PATH + ", kind=[]int}",res);
     }
