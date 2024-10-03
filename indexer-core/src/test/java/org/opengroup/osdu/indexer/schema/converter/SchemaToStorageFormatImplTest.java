@@ -16,12 +16,9 @@ package org.opengroup.osdu.indexer.schema.converter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.inject.Inject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
@@ -65,16 +62,16 @@ public class SchemaToStorageFormatImplTest {
 
     private IFeatureFlag featureFlag;
 
+    private SchemaConverterPropertiesConfig schemaConverterPropertiesConfig;
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
         featureFlag = Mockito.mock(IFeatureFlag.class);
-        when(featureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
         virtualPropertiesSchemaCache = Mockito.mock(VirtualPropertiesSchemaCache.class);
-//        when(virtualPropertiesSchemaCache.put(Mockito.anyString(), Mockito.any())).doNothing();
+        schemaConverterPropertiesConfig = new SchemaConverterPropertiesConfig(featureFlag);
         schemaToStorageFormatImpl
-                = new SchemaToStorageFormatImpl(objectMapper, jaxRsDpsLog,
-                    new SchemaConverterPropertiesConfig(featureFlag), virtualPropertiesSchemaCache);
+            = new SchemaToStorageFormatImpl(objectMapper, jaxRsDpsLog,
+                schemaConverterPropertiesConfig, virtualPropertiesSchemaCache);
     }
 
     @Test
@@ -171,23 +168,39 @@ public class SchemaToStorageFormatImplTest {
     }
 
     @Test
-    public void folderPassed() throws URISyntaxException, IOException {
+    public void folderPassedWithFF() throws URISyntaxException, IOException {
+        folderPassed(true);
+    }
 
+    @Test
+    public void folderPassedFFOff() throws URISyntaxException, IOException {
+        folderPassed(false);
+    }
+
+    public void folderPassed(boolean map2StringFF) throws URISyntaxException, IOException {
         String folder = "/converter/R3-json-schema";
         Path path = Paths.get(this.getClass().getResource(folder).toURI());
         Files.walk(path)
                 .filter(Files::isRegularFile)
                 .filter(f -> f.toString().endsWith(".json"))
-                .forEach(f -> testSingleFile(f.toString().replaceAll("\\\\", "/").substring(f.toString().replaceAll("\\\\", "/").indexOf(folder)), "osdu:osdu:Wellbore:1.0.0"));
+                .forEach(f -> testSingleFile(
+                        f.toString().replaceAll("\\\\", "/").substring(f.toString().replaceAll("\\\\", "/").indexOf(folder)),
+                        "osdu:osdu:Wellbore:1.0.0",
+                        map2StringFF
+                ));
     }
 
     private void testSingleFile(String filename, String kind) {
+        testSingleFile(filename, kind, false);
+    }
+
+    private void testSingleFile(String filename, String kind, boolean map2StringFF) {
+        when(featureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(map2StringFF);
+        schemaConverterPropertiesConfig.resetToDefault();
         String json = getSchemaFromSchemaService(filename);
 
         Map<String, Object> converted = schemaToStorageFormatImpl.convertToMap(json, kind);
-        String resource = filename +
-                ((featureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME))?".FF":"")+
-                ".res";
+        String resource = filename + (map2StringFF?".FF":"")+ ".res";
         if (!existsStorageSchema(resource)) resource = filename + ".res";
         Map<String, Object> expected = getStorageSchema(resource);
 

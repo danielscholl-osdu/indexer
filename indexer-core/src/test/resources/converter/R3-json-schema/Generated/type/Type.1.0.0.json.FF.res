@@ -26,7 +26,7 @@
       "path": "SchemaKind"
     },
     {
-      "kind": "bool",
+      "kind": "boolean",
       "path": "IsReferenceValueType"
     },
     {
