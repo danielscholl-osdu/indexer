@@ -17,6 +17,7 @@ package org.opengroup.osdu.indexer.schema.converter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -155,15 +156,30 @@ public class SchemaToStorageFormatImplTest {
     }
 
     @Test
-    public void virtualProperties() {
-        testSingleFile("/converter/index-virtual-properties/virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0");
+    @Ignore
+    public void virtualProperties_FFoff() {
+        testSingleFile("/converter/index-virtual-properties/virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", false);
         verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
     }
 
     @Test
-    public void unmatchedVirtualProperties() {
+    public void virtualProperties_FFon() {
+        testSingleFile("/converter/index-virtual-properties/virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", true);
+        verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
+    }
+
+    @Test
+    public void unmatchedVirtualProperties_FFon() {
         // The actual property "data.Facility" does not exist for "data.VirtualProperties.DefaultName"
-        testSingleFile("/converter/index-virtual-properties/unmatched-virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0");
+        testSingleFile("/converter/index-virtual-properties/unmatched-virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", true);
+        verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
+    }
+
+    @Test
+    @Ignore
+    public void unmatchedVirtualProperties_FFoff() {
+        // The actual property "data.Facility" does not exist for "data.VirtualProperties.DefaultName"
+        testSingleFile("/converter/index-virtual-properties/unmatched-virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", false);
         verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
     }
 

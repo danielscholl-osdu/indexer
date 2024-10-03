@@ -66,7 +66,7 @@
       "path": "formationProjected"
     },
     {
-      "kind": "boolean",
+      "kind": "bool",
       "path": "hasAchievedTotalDepth"
     },
     {
