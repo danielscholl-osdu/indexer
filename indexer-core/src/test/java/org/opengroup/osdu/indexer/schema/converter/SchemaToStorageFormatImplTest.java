@@ -156,7 +156,6 @@ public class SchemaToStorageFormatImplTest {
     }
 
     @Test
-    @Ignore
     public void virtualProperties_FFoff() {
         testSingleFile("/converter/index-virtual-properties/virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", false);
         verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
@@ -176,7 +175,6 @@ public class SchemaToStorageFormatImplTest {
     }
 
     @Test
-    @Ignore
     public void unmatchedVirtualProperties_FFoff() {
         // The actual property "data.Facility" does not exist for "data.VirtualProperties.DefaultName"
         testSingleFile("/converter/index-virtual-properties/unmatched-virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", false);

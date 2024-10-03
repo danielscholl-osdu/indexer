@@ -335,6 +335,6 @@
     "kind" : "string"
   }, {
          "path" : "VirtualProperties.DefaultLocation.IsDecimated",
-         "kind" : "bool"
+         "kind" : "boolean"
   }]
 }
