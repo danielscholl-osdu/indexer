@@ -44,6 +44,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES_FEATURE_NAME;
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 
 @Component
 public class StorageIndexerPayloadMapper {
@@ -67,7 +68,7 @@ public class StorageIndexerPayloadMapper {
     private PointExtractor pointExtractor;
 
     @Autowired
-    private IFeatureFlag asIngestedCoordinatesFeatureFlag;
+    private IFeatureFlag featureFlagChecker;
 
     public Map<String, Object> mapDataPayload(ArrayList<String> asIngestedCoordinatesPaths, IndexSchema storageSchema, Map<String, Object> storageRecordData,
                                               String recordId) {
@@ -81,7 +82,7 @@ public class StorageIndexerPayloadMapper {
 
         mapDataPayload(storageSchema.getDataSchema(), storageRecordData, recordId, dataCollectorMap);
         mapVirtualPropertiesPayload(storageSchema, recordId, dataCollectorMap);
-        if (this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)) {
+        if (this.featureFlagChecker.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)) {
             mapAsIngestedCoordinatesPayload(recordId, asIngestedCoordinatesPaths, storageRecordData, dataCollectorMap);
         }
 
@@ -115,11 +116,23 @@ public class StorageIndexerPayloadMapper {
             switch (elasticType) {
                 case KEYWORD:
                 case TEXT:
-                    this.attributeParsingService.tryParseString(recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
+                    // Feature flag enforces conversion of values to string when index type is string, this is required for features using
+                    // copy_to mechanic like bag of words, however originally index type for boolean values was string so this would convert
+                    // those values to string without changing the index type, changing index type would require migration so it is also
+                    // under this feature flag as not all users will be interested with it
+                    if (this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)) {
+                        this.attributeParsingService.tryParseString(recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
+                    } else {
+                        dataCollectorMap.put(schemaPropertyName, storageRecordValue);    
+                    }
                     break;
                 case KEYWORD_ARRAY:
                 case TEXT_ARRAY:
-                    this.attributeParsingService.tryParseValueArray(String.class, recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
+                    if (this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)) {
+                        this.attributeParsingService.tryParseValueArray(String.class, recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
+                    } else {
+                        dataCollectorMap.put(schemaPropertyName, storageRecordValue);
+                    }
                     break;
                 case INTEGER_ARRAY:
                     this.attributeParsingService.tryParseValueArray(Integer.class, recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
