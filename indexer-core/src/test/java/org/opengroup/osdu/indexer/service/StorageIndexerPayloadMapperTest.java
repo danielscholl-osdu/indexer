@@ -27,6 +27,7 @@ import org.opengroup.osdu.indexer.util.geo.decimator.GeoShapeDecimator;
 import org.opengroup.osdu.indexer.util.geo.decimator.GeometryDecimator;
 import org.opengroup.osdu.indexer.util.geo.extractor.PointExtractor;
 import org.opengroup.osdu.indexer.util.parser.*;
+import org.opengroup.osdu.indexer.util.BooleanFeatureFlagClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -49,7 +50,7 @@ import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES
         GeometryDecimator.class, PointExtractor.class, GeometryConversionService.class, FeatureFlagCache.class,
         DpsHeaders.class, JobStatus.class, SchemaConverterPropertiesConfig.class, JaxRsDpsLog.class,
         ServiceAccountJwtClientMock.class, VirtualPropertiesSchemaCacheMock.class, VirtualPropertiesSchemaCache.class, RequestInfoMock.class,
-        IFeatureFlag.class, StringParser.class}
+        IFeatureFlag.class, StringParser.class, BooleanFeatureFlagClient.class}
 )
 public class StorageIndexerPayloadMapperTest {
 
@@ -85,6 +86,9 @@ public class StorageIndexerPayloadMapperTest {
 
     @MockBean
     protected IFeatureFlag featureFlagChecker;
+
+    @MockBean
+    protected BooleanFeatureFlagClient partitionFlagChecker;
 
     @BeforeClass
     public static void setUp() {

@@ -27,6 +27,7 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.indexer.cache.partitionsafe.VirtualPropertiesSchemaCache;
 import org.opengroup.osdu.indexer.schema.converter.config.SchemaConverterPropertiesConfig;
 import org.opengroup.osdu.indexer.schema.converter.exeption.SchemaProcessingException;
+import org.opengroup.osdu.indexer.util.BooleanFeatureFlagClient;
 import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 
 import org.springframework.context.annotation.Configuration;
@@ -63,13 +64,16 @@ public class SchemaToStorageFormatImplTest {
 
     private IFeatureFlag featureFlag;
 
+    private BooleanFeatureFlagClient partitionFlagClient;
+
     private SchemaConverterPropertiesConfig schemaConverterPropertiesConfig;
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
         featureFlag = Mockito.mock(IFeatureFlag.class);
+        partitionFlagClient = Mockito.mock(BooleanFeatureFlagClient.class);
         virtualPropertiesSchemaCache = Mockito.mock(VirtualPropertiesSchemaCache.class);
-        schemaConverterPropertiesConfig = new SchemaConverterPropertiesConfig(featureFlag);
+        schemaConverterPropertiesConfig = new SchemaConverterPropertiesConfig(featureFlag, partitionFlagClient);
         schemaToStorageFormatImpl
             = new SchemaToStorageFormatImpl(objectMapper, jaxRsDpsLog,
                 schemaConverterPropertiesConfig, virtualPropertiesSchemaCache);

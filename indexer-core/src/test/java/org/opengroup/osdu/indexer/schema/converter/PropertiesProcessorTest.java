@@ -37,6 +37,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.opengroup.osdu.indexer.util.BooleanFeatureFlagClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -44,9 +45,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@Import({IFeatureFlag.class})
-@ContextConfiguration(classes = {PropertiesProcessorTest.class, IFeatureFlag.class})
-@SpringBootTest(classes = {IFeatureFlag.class})
+@Import({IFeatureFlag.class, BooleanFeatureFlagClient.class})
+@ContextConfiguration(classes = {PropertiesProcessorTest.class, IFeatureFlag.class, BooleanFeatureFlagClient.class})
+@SpringBootTest(classes = {IFeatureFlag.class, BooleanFeatureFlagClient.class})
 public class PropertiesProcessorTest {
 
     private static final String PATH = "given_path";
@@ -55,12 +56,15 @@ public class PropertiesProcessorTest {
     @MockBean
     private IFeatureFlag featureFlagChecker;
 
+    @MockBean
+    private BooleanFeatureFlagClient partitionFlagClient;
+
     private SchemaConverterPropertiesConfig schemaConverterConfig;
 
     @Before
     public void setup() throws IOException {
         initMocks(this);
-        schemaConverterConfig = new SchemaConverterPropertiesConfig(featureFlagChecker);
+        schemaConverterConfig = new SchemaConverterPropertiesConfig(featureFlagChecker, partitionFlagClient);
     }
 
     @Test
