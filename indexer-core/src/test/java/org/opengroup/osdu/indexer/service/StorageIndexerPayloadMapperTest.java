@@ -288,7 +288,6 @@ public class StorageIndexerPayloadMapperTest {
     @Test
     public void mapDataPayloadTestAsIngestedCoordinates() {
         when(this.featureFlagChecker.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
-        when(this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();
@@ -325,7 +324,6 @@ public class StorageIndexerPayloadMapperTest {
     @Test
     public void mapDataPayloadTestAsIngestedCoordinatesGeographicBottomHoleLocationAndSpatialLocation() {
         when(this.featureFlagChecker.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
-        when(this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("GeographicBottomHoleLocation.AsIngestedCoordinates", "SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();
@@ -389,7 +387,6 @@ public class StorageIndexerPayloadMapperTest {
     @Test
     public void mapDataPayloadTestAsIngestedCoordinatesWithEmptyZCoordinate() {
         when(this.featureFlagChecker.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
-        when(this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();
