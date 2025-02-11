@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
@@ -29,18 +29,15 @@ public class SchemaConverterPropertiesConfig implements SchemaConverterConfig {
     private Set<String> processedArraysTypes;
     private String defaultObjectArraysType;
 
-    @Autowired
-    private IFeatureFlag featureFlagChecker;
-    @Autowired
-    private BooleanFeatureFlagClient partitionFlagChecker;
+    private final IFeatureFlag featureFlagChecker;
+    private final BooleanFeatureFlagClient partitionFlagChecker;
 
-    public SchemaConverterPropertiesConfig(IFeatureFlag flag, BooleanFeatureFlagClient flagClient) {
-        if (flag != null) featureFlagChecker=flag;
-        if (flagClient != null) partitionFlagChecker=flagClient;
+    public SchemaConverterPropertiesConfig(IFeatureFlag featureFlagChecker, BooleanFeatureFlagClient partitionFlagChecker) {
+        this.featureFlagChecker = featureFlagChecker;
+        this.partitionFlagChecker = partitionFlagChecker;
         skippedDefinitions = getDefaultSkippedDefinitions();
         supportedArrayTypes = getDefaultSupportedArrayTypes();
         specialDefinitionsMap = getDefaultSpecialDefinitionsMap();
-        primitiveTypesMap = getDefaultPrimitiveTypesMap();
         processedArraysTypes = getDefaultArraysTypesForProcessing();
         defaultObjectArraysType = getObjectArraysDefaultType();
     }
@@ -110,6 +107,13 @@ public class SchemaConverterPropertiesConfig implements SchemaConverterConfig {
         defaultPrimitiveTypesMap.put("int64", "long");
 
         return defaultPrimitiveTypesMap;
+    }
+
+    public Map<String, String> getPrimitiveTypesMap() {
+        if (primitiveTypesMap == null) {
+            primitiveTypesMap = getDefaultPrimitiveTypesMap();
+        }
+        return primitiveTypesMap;
     }
 
     private Set<String> getDefaultArraysTypesForProcessing() {
