@@ -33,8 +33,10 @@ import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.M
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.ReflectionUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -76,7 +78,10 @@ public class SchemaToStorageFormatImplTest {
         schemaConverterPropertiesConfig = new SchemaConverterPropertiesConfig(featureFlag, partitionFlagClient);
         schemaToStorageFormatImpl
             = new SchemaToStorageFormatImpl(objectMapper, jaxRsDpsLog,
-                schemaConverterPropertiesConfig, virtualPropertiesSchemaCache);
+                schemaConverterPropertiesConfig);
+        Field field = ReflectionUtils.findField(SchemaToStorageFormatImpl.class, "virtualPropertiesSchemaCache");
+        field.setAccessible(true);
+        ReflectionUtils.setField(field, schemaToStorageFormatImpl, virtualPropertiesSchemaCache);
     }
 
     @Test
