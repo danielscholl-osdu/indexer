@@ -8,13 +8,18 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.java.Log;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
@@ -37,6 +42,7 @@ public class ElasticClientHandler {
   private static final int REST_CLIENT_CONNECT_TIMEOUT = 60000;
   private static final int REST_CLIENT_SOCKET_TIMEOUT = 60000;
   private static final int REST_CLIENT_RETRY_TIMEOUT = 60000;
+  private static final int REST_CLIENT_CONNECTION_TTL_SECONDS = 60;
 
   @Value("#{new Boolean('${security.https.certificate.trust:false}')}")
   private Boolean isSecurityHttpsCertificateTrust;
@@ -89,7 +95,9 @@ public class ElasticClientHandler {
       RestClientBuilder builder = createClientBuilder(host, basicAuthenticationHeaderVal, port,
           protocolScheme, tls);
 
-      RestClientTransport transport = new RestClientTransport(builder.build(), new JacksonJsonpMapper());
+      ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.configure(SerializationFeature.INDENT_OUTPUT, false);
+      RestClientTransport transport = new RestClientTransport(builder.build(), new JacksonJsonpMapper(objectMapper));
 
       return new ElasticsearchClient(transport);
     } catch (AppException e) {
@@ -126,13 +134,16 @@ public class ElasticClientHandler {
         "Elastic client connection uses protocolScheme = %s with a flag "
             + "'security.https.certificate.trust' = %s",
         protocolScheme, isSecurityHttpsCertificateTrust));
+    HttpAsyncClientBuilder httpAsyncClientBuilder = HttpAsyncClientBuilder.create();
+    httpAsyncClientBuilder.setConnectionTimeToLive(REST_CLIENT_CONNECTION_TTL_SECONDS, TimeUnit.SECONDS);
     if ("https".equals(protocolScheme) && isSecurityHttpsCertificateTrust) {
       log.fine( "Elastic client connection uses TrustSelfSignedStrategy()");
       SSLContext sslContext = createSSLContext();
-      builder.setHttpClientConfigCallback(httpClientBuilder ->
-          httpClientBuilder.setSSLContext(sslContext)
-              .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE));
+      httpAsyncClientBuilder
+          .setSSLContext(sslContext)
+          .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
     }
+    builder.setHttpClientConfigCallback(httpClientBuilder -> httpAsyncClientBuilder);
 
     builder.setDefaultHeaders(defaultHeaders);
     return builder;

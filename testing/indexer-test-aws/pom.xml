@@ -58,7 +58,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.26.0-rc2</version>
+            <version>0.29.0</version>
         </dependency>
 
         <!-- Testing -->
@@ -86,7 +86,7 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>7.17.22</version>
+            <version>8.15.2</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>

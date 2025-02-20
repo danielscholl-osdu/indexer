@@ -51,12 +51,6 @@ spec:
             name: {{ .Values.conf.configmap | quote }}
         - secretRef:
             name: {{ .Values.conf.elasticSecretName | quote }}
-        {{- if .Values.global.onPremEnabled }}
-        - secretRef:
-            name: {{ .Values.conf.keycloakSecretName | quote }}
-        - secretRef:
-            name: {{ .Values.conf.rabbitmqSecretName | quote }}
-        {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
@@ -87,3 +81,8 @@ spec:
             memory: {{ .Values.data.limitsMemory | quote }}
           {{- end }}
       serviceAccountName: {{ .Values.data.serviceAccountName | quote }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0

@@ -5,9 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace | quote }}
 spec:
   hosts:
-    {{- if and .Values.global.domain .Values.global.onPremEnabled }}
-    - {{ printf "osdu.%s" .Values.global.domain | quote }}
-    {{- else if .Values.global.domain }}
+    {{- if .Values.global.domain }}
     - {{ .Values.global.domain | quote }}
     {{- else }}
     - "*"
@@ -15,14 +13,13 @@ spec:
   gateways:
     - service-gateway
   http:
-    # FIXME: use it when migrate to istio 1.6
-    # - match:
-    #     - uri:
-    #         prefix: "/api/indexer/v2/_dps"
-    #   directResponse:
-    #     status: 403
-    #     body:
-    #       string: "Forbidden"
+    - match:
+        - uri:
+            prefix: "/api/indexer/v2/_dps"
+      directResponse:
+        status: 403
+        body:
+          string: "Forbidden"
     - match:
         - uri:
             prefix: "/api/indexer/v2"

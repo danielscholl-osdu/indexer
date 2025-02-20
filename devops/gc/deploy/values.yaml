@@ -4,18 +4,19 @@
 
 global:
   domain: ""
-  onPremEnabled: false
   limitsEnabled: true
+  logLevel: "ERROR"
+  tier: ""
+  autoscaling: true
 
 data:
   # Configmap
   entitlementsHost: "http://entitlements"
-  logLevel: "ERROR"
+  logLevel: ""
   partitionHost: "http://partition"
   schemaHost: "http://schema"
   securityHttpsCertificateTrust: "true"
   storageHost: "http://storage"
-  searchHost: "http://search"
   # Deployment
   requestsCpu: "100m"
   requestsMemory: "640Mi"
@@ -33,8 +34,6 @@ conf:
   appName: "indexer"
   configmap: "indexer-config"
   elasticSecretName: "indexer-elastic-secret"
-  keycloakSecretName: "indexer-keycloak-secret"
-  rabbitmqSecretName: "rabbitmq-secret"
   indexerRedisSecretName: "indexer-redis-secret"
   replicas: 2
 
@@ -44,3 +43,24 @@ istio:
   proxyMemory: "100Mi"
   proxyMemoryLimit: "256Mi"
   sidecarInject: true
+
+hpa:
+  minReplicas: 6
+  maxReplicas: 15
+  pubsubTargetType: AverageValue
+  pubsubTargetValue: 50
+  cpuTargetType: Utilization
+  cpuTargetValue: 70
+  memoryTargetType: Utilization
+  memoryTargetValue: 70
+  behaviorScaleUpStabilizationWindowSeconds: 60
+  behaviorScaleUpPoliciesValue: 1
+  behaviorScaleUpPoliciesPeriodSeconds: 120
+  behaviorScaleDownStabilizationWindowSeconds: 60
+  behaviorScaleDownPoliciesValue: 1
+  behaviorScaleDownPoliciesPeriodSeconds: 120
+
+limits:
+  maxTokens: 200 #rps
+  tokensPerFill: 200
+  fillInterval: "1s"

@@ -24,8 +24,7 @@ import lombok.Data;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.HttpResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.opengroup.osdu.indexer.azure.config.RetryPolicyConfig;
 import org.springframework.stereotype.Component;
 
 import java.util.function.Predicate;
@@ -38,23 +37,27 @@ import java.util.function.Predicate;
 @Log
 @Component
 @Data
-@ConfigurationProperties(prefix = "azure.storage.client.retry")
 public class RetryPolicy {
 
-    @Autowired
     private JaxRsDpsLog logger;
 
-    private static int MAX_ATTEMPTS = 5;
-    private static int INITIAL_DELAY = 1000;
+    private RetryPolicyConfig retryPolicyConfig;
+
     private final String RECORD_NOT_FOUND = "notFound";
+
+    public RetryPolicy(JaxRsDpsLog logger, RetryPolicyConfig retryPolicyConfig){
+        this.logger = logger;
+        this.retryPolicyConfig = retryPolicyConfig;
+    }
+
 
     /**
      * @return RetryConfig with 3 attempts and 1 sec wait time
      */
     public RetryConfig retryConfig(Predicate<HttpResponse> predicate) {
         return RetryConfig.<HttpResponse>custom()
-                .maxAttempts(MAX_ATTEMPTS)
-                .intervalFunction(IntervalFunction.ofExponentialBackoff(INITIAL_DELAY, 2))
+                .maxAttempts(retryPolicyConfig.getMAX_ATTEMPTS())
+                .intervalFunction(IntervalFunction.ofExponentialBackoff(retryPolicyConfig.getINITIAL_DELAY(), 2))
                 .retryOnResult(predicate)
                 .build();
     }
@@ -69,6 +72,11 @@ public class RetryPolicy {
         if (retryOnEmptyResponse(response)) return false;
 
         if (defaultResponseRetry(response)) return true;
+
+        if (response.getResponseCode() == 429) {
+            logger.debug("Storage batch API 429 retry");
+            return true;
+        }
 
         JsonObject jsonObject = new JsonParser().parse(response.getBody()).getAsJsonObject();
         JsonElement notFoundElement = (JsonArray) jsonObject.get(RECORD_NOT_FOUND);
