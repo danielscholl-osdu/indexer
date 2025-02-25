@@ -387,9 +387,9 @@ public class StorageIndexerPayloadMapperTest {
         storageRecordData = loadObject("/converter/index-as-ingested-coordinates/wellStorageRecordData-v2.json", storageRecordData.getClass());
 
         IndexSchema indexSchema = loadObject("/converter/index-as-ingested-coordinates/wellStorageSchema.json", IndexSchema.class);
-        indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.FirstPoint.X", "long");
-        indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.FirstPoint.Y", "long");
-        indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.FirstPoint.Z", "long");
+        indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.FirstPoint.X", "double");
+        indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.FirstPoint.Y", "double");
+        indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.FirstPoint.Z", "double");
         indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.CoordinateReferenceSystemID", "text");
         indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.VerticalCoordinateReferenceSystemID", "text");
         indexSchema.getDataSchema().put("SpatialLocation.AsIngestedCoordinates.VerticalUnitID", "text");
