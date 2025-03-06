@@ -17,20 +17,26 @@ package org.opengroup.osdu.indexer.schema.converter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.indexer.cache.partitionsafe.VirtualPropertiesSchemaCache;
 import org.opengroup.osdu.indexer.schema.converter.config.SchemaConverterPropertiesConfig;
 import org.opengroup.osdu.indexer.schema.converter.exeption.SchemaProcessingException;
+import org.opengroup.osdu.indexer.util.BooleanFeatureFlagClient;
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
+
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.ReflectionUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -42,10 +48,10 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringRunner.class)
+@Configuration
 public class SchemaToStorageFormatImplTest {
 
     private static final String KIND = "KIND_VAL";
@@ -54,17 +60,28 @@ public class SchemaToStorageFormatImplTest {
 
     private JaxRsDpsLog jaxRsDpsLog = Mockito.mock(JaxRsDpsLog.class);
 
-    @InjectMocks
-    private SchemaToStorageFormatImpl schemaToStorageFormatImpl
-            = new SchemaToStorageFormatImpl(objectMapper, jaxRsDpsLog
-            , new SchemaConverterPropertiesConfig());
+    private SchemaToStorageFormatImpl schemaToStorageFormatImpl;
 
-    @Mock
     private VirtualPropertiesSchemaCache virtualPropertiesSchemaCache;
 
+    private IFeatureFlag featureFlag;
+
+    private BooleanFeatureFlagClient partitionFlagClient;
+
+    private SchemaConverterPropertiesConfig schemaConverterPropertiesConfig;
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
+        featureFlag = Mockito.mock(IFeatureFlag.class);
+        partitionFlagClient = Mockito.mock(BooleanFeatureFlagClient.class);
+        virtualPropertiesSchemaCache = Mockito.mock(VirtualPropertiesSchemaCache.class);
+        schemaConverterPropertiesConfig = new SchemaConverterPropertiesConfig(featureFlag, partitionFlagClient);
+        schemaToStorageFormatImpl
+            = new SchemaToStorageFormatImpl(objectMapper, jaxRsDpsLog,
+                schemaConverterPropertiesConfig);
+        Field field = ReflectionUtils.findField(SchemaToStorageFormatImpl.class, "virtualPropertiesSchemaCache");
+        field.setAccessible(true);
+        ReflectionUtils.setField(field, schemaToStorageFormatImpl, virtualPropertiesSchemaCache);
     }
 
     @Test
@@ -148,36 +165,73 @@ public class SchemaToStorageFormatImplTest {
     }
 
     @Test
-    public void virtualProperties() {
-        testSingleFile("/converter/index-virtual-properties/virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0");
+    public void virtualProperties_FFoff() {
+        testSingleFile("/converter/index-virtual-properties/virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", false);
         verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
     }
 
     @Test
-    public void unmatchedVirtualProperties() {
+    public void virtualProperties_FFon() {
+        testSingleFile("/converter/index-virtual-properties/virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", true);
+        verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
+    }
+
+    @Test
+    public void unmatchedVirtualProperties_FFon() {
         // The actual property "data.Facility" does not exist for "data.VirtualProperties.DefaultName"
-        testSingleFile("/converter/index-virtual-properties/unmatched-virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0");
+        testSingleFile("/converter/index-virtual-properties/unmatched-virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", true);
         verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
     }
 
     @Test
-    public void folderPassed() throws URISyntaxException, IOException {
+    public void unmatchedVirtualProperties_FFoff() {
+        // The actual property "data.Facility" does not exist for "data.VirtualProperties.DefaultName"
+        testSingleFile("/converter/index-virtual-properties/unmatched-virtual-properties-schema.json", "osdu:wks:master-data--Wellbore:1.0.0", false);
+        verify(this.virtualPropertiesSchemaCache, times(1)).put(Mockito.anyString(), Mockito.any());
+    }
 
+    @Test
+    public void folderPassedWithFF() throws URISyntaxException, IOException {
+        folderPassed(true);
+    }
+
+    @Test
+    public void folderPassedFFOff() throws URISyntaxException, IOException {
+        folderPassed(false);
+    }
+
+    public void folderPassed(boolean map2StringFF) throws URISyntaxException, IOException {
         String folder = "/converter/R3-json-schema";
         Path path = Paths.get(this.getClass().getResource(folder).toURI());
         Files.walk(path)
                 .filter(Files::isRegularFile)
                 .filter(f -> f.toString().endsWith(".json"))
-                .forEach(f -> testSingleFile(f.toString().replaceAll("\\\\", "/").substring(f.toString().replaceAll("\\\\", "/").indexOf(folder)), "osdu:osdu:Wellbore:1.0.0"));
+                .forEach(f -> testSingleFile(
+                        f.toString().replaceAll("\\\\", "/").substring(f.toString().replaceAll("\\\\", "/").indexOf(folder)),
+                        "osdu:osdu:Wellbore:1.0.0",
+                        map2StringFF
+                ));
     }
 
     private void testSingleFile(String filename, String kind) {
+        testSingleFile(filename, kind, false);
+    }
+
+    private void testSingleFile(String filename, String kind, boolean map2StringFF) {
+        when(featureFlag.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(map2StringFF);
+        schemaConverterPropertiesConfig.resetToDefault();
         String json = getSchemaFromSchemaService(filename);
 
         Map<String, Object> converted = schemaToStorageFormatImpl.convertToMap(json, kind);
-        Map<String, Object> expected = getStorageSchema(filename + ".res");
+        String resource = filename + (map2StringFF?".FF":"")+ ".res";
+        if (!existsStorageSchema(resource)) resource = filename + ".res";
+        Map<String, Object> expected = getStorageSchema(resource);
 
         compareSchemas(expected, converted, filename);
+    }
+
+    private boolean existsStorageSchema(String s) {
+        return null != this.getClass().getResource(s);
     }
 
     private Map<String, Object> getStorageSchema(String s) {

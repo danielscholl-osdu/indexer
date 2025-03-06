@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.indexer.schema.converter;
 
+import lombok.Getter;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.Constants;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -36,7 +37,7 @@ import java.util.stream.Stream;
 
 public class PropertiesProcessor {
 
-    private SchemaConverterConfig schemaConverterConfig;
+    private final SchemaConverterConfig schemaConverterConfig;
 
     private static final String TYPE_KEY = "type";
     private static final String DEF_PREFIX = "#/definitions/";
@@ -47,6 +48,7 @@ public class PropertiesProcessor {
     private final String pathPrefix;
     private final String pathPrefixWithDot;
 
+    @Getter
     private final List<String> errors = new LinkedList<>();
 
     public PropertiesProcessor(Definitions definitions, SchemaConverterConfig schemaConverterConfig) {
@@ -122,10 +124,6 @@ public class PropertiesProcessor {
 
     public Stream<Map<String, Object>> processProperties(Map<String, TypeProperty> properties) {
         return properties.entrySet().stream().flatMap(this::processPropertyEntry);
-    }
-
-    public List<String> getErrors() {
-        return errors;
     }
 
     private String getDefinitionIdentity(String definitionSubRef) {
@@ -208,7 +206,7 @@ public class PropertiesProcessor {
 
             if (Objects.nonNull(entry.getValue().getProperties())) {
                 PropertiesProcessor propertiesProcessor = new PropertiesProcessor(definitions, pathPrefixWithDot + entry.getKey()
-                        , new SchemaConverterPropertiesConfig());
+                        , schemaConverterConfig);
                 Stream<Map<String, Object>> result = entry.getValue().getProperties().entrySet().stream().flatMap(propertiesProcessor::processPropertyEntry);
                 errors.addAll(propertiesProcessor.getErrors());
                 return result;
@@ -216,7 +214,7 @@ public class PropertiesProcessor {
 
             if (Objects.nonNull(entry.getValue().getRef())) {
                 PropertiesProcessor propertiesProcessor = new PropertiesProcessor(definitions
-                        , pathPrefixWithDot + entry.getKey(), new SchemaConverterPropertiesConfig());
+                        , pathPrefixWithDot + entry.getKey(), schemaConverterConfig);
                 Stream<Map<String, Object>> refResult = propertiesProcessor.processRef(entry.getValue().getRef());
                 errors.addAll(propertiesProcessor.getErrors());
                 return refResult;
@@ -238,7 +236,7 @@ public class PropertiesProcessor {
                 indexHint.getOrDefault(TYPE_KEY, schemaConverterConfig.getDefaultObjectArraysType());
 
         if (schemaConverterConfig.getProcessedArraysTypes().contains(indexingType)) {
-            PropertiesProcessor propertiesProcessor = new PropertiesProcessor(definitions, new SchemaConverterPropertiesConfig());
+            PropertiesProcessor propertiesProcessor = new PropertiesProcessor(definitions, schemaConverterConfig);
 
             Stream<Map<String, Object>> propertiesStream = Stream.empty();
 
@@ -265,7 +263,7 @@ public class PropertiesProcessor {
 
         if (Objects.nonNull(entry.getValue().getAllOf())) {
             PropertiesProcessor propertiesProcessor = new PropertiesProcessor(definitions, pathPrefixWithDot + entry.getKey()
-                    , new SchemaConverterPropertiesConfig());
+                    , schemaConverterConfig);
 
             ofItems = entry.getValue().getAllOf().stream().flatMap(propertiesProcessor::processItem);
             errors.addAll(propertiesProcessor.getErrors());
@@ -273,7 +271,7 @@ public class PropertiesProcessor {
 
         if (Objects.nonNull(entry.getValue().getAnyOf())) {
             PropertiesProcessor propertiesProcessor = new PropertiesProcessor(definitions, pathPrefixWithDot + entry.getKey()
-                    , new SchemaConverterPropertiesConfig());
+                    , schemaConverterConfig);
 
             ofItems = Stream.concat(Optional.ofNullable(ofItems).orElseGet(Stream::empty),
                     entry.getValue().getAnyOf().stream().flatMap(propertiesProcessor::processItem));
@@ -282,7 +280,7 @@ public class PropertiesProcessor {
 
         if (Objects.nonNull(entry.getValue().getOneOf())) {
             PropertiesProcessor propertiesProcessor = new PropertiesProcessor(definitions, pathPrefixWithDot + entry.getKey()
-                    , new SchemaConverterPropertiesConfig());
+                    , schemaConverterConfig);
 
             ofItems = Stream.concat(Optional.ofNullable(ofItems).orElseGet(Stream::empty),
                     entry.getValue().getOneOf().stream().flatMap(propertiesProcessor::processItem));

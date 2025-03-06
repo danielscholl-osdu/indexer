@@ -27,6 +27,7 @@ import org.opengroup.osdu.indexer.util.geo.decimator.GeoShapeDecimator;
 import org.opengroup.osdu.indexer.util.geo.decimator.GeometryDecimator;
 import org.opengroup.osdu.indexer.util.geo.extractor.PointExtractor;
 import org.opengroup.osdu.indexer.util.parser.*;
+import org.opengroup.osdu.indexer.util.BooleanFeatureFlagClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -40,6 +41,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES_FEATURE_NAME;
 
 @RunWith(SpringRunner.class)
@@ -48,7 +50,8 @@ import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES
         GeometryDecimator.class, PointExtractor.class, GeometryConversionService.class, FeatureFlagCache.class,
         DpsHeaders.class, JobStatus.class, SchemaConverterPropertiesConfig.class, JaxRsDpsLog.class,
         ServiceAccountJwtClientMock.class, VirtualPropertiesSchemaCacheMock.class, VirtualPropertiesSchemaCache.class, RequestInfoMock.class,
-        IFeatureFlag.class, StringParser.class})
+        IFeatureFlag.class, StringParser.class, BooleanFeatureFlagClient.class}
+)
 public class StorageIndexerPayloadMapperTest {
 
     public static final String FIRST_OBJECT_INNER_PROPERTY = "FirstObjectInnerProperty";
@@ -82,7 +85,10 @@ public class StorageIndexerPayloadMapperTest {
     private VirtualPropertiesSchemaCache virtualPropertiesSchemaCache;
 
     @MockBean
-    protected IFeatureFlag asIngestedCoordinatesFeatureFlag;
+    protected IFeatureFlag featureFlagChecker;
+
+    @MockBean
+    protected BooleanFeatureFlagClient partitionFlagChecker;
 
     @BeforeClass
     public static void setUp() {
@@ -281,7 +287,7 @@ public class StorageIndexerPayloadMapperTest {
 
     @Test
     public void mapDataPayloadTestAsIngestedCoordinates() {
-        when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
+        when(this.featureFlagChecker.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();
@@ -317,7 +323,7 @@ public class StorageIndexerPayloadMapperTest {
 
     @Test
     public void mapDataPayloadTestAsIngestedCoordinatesGeographicBottomHoleLocationAndSpatialLocation() {
-        when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
+        when(this.featureFlagChecker.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("GeographicBottomHoleLocation.AsIngestedCoordinates", "SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();
@@ -380,7 +386,7 @@ public class StorageIndexerPayloadMapperTest {
 
     @Test
     public void mapDataPayloadTestAsIngestedCoordinatesWithEmptyZCoordinate() {
-        when(this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
+        when(this.featureFlagChecker.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)).thenReturn(true);
 
         ArrayList<String> asIngestedCoordinatesPaths = new ArrayList<>(Arrays.asList("SpatialLocation.AsIngestedCoordinates"));
         Map<String, Object> storageRecordData = new HashMap<>();
@@ -402,6 +408,92 @@ public class StorageIndexerPayloadMapperTest {
         assertEquals(dataCollectorMap.get("SpatialLocation.AsIngestedCoordinates.FirstPoint.Y"), 10.0);
         assertFalse(dataCollectorMap.containsKey("SpatialLocation.AsIngestedCoordinates.FirstPoint.Z"));
         assertNull(dataCollectorMap.get("SpatialLocation.AsIngestedCoordinates.FirstPoint.Z"));
+    }
+
+    @Test
+    public void mapDataPayloadTestAutoconversionsBooleanConversionOn() {
+        when(this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(true);
+        Map<String, Object> storageRecordLocalData = loadObject("/converter/index-autoconversions/wellStorageRecordData.json", storageRecordData.getClass());
+        IndexSchema indexLocalSchema = loadObject("/converter/index-autoconversions/wellStorageSchema.json", IndexSchema.class);
+        Map<String, Object> dataCollectorMap = payloadMapper.mapDataPayload(emptyAsIngestedCoordinatesPaths, indexLocalSchema, storageRecordLocalData, RECORD_TEST_ID);
+
+        assertTrue(dataCollectorMap.containsKey("SomeKeywordField"));
+        assertEquals(dataCollectorMap.get("SomeKeywordField"), "42.0");
+        assertTrue(dataCollectorMap.containsKey("SomeTextField"));
+        assertEquals(dataCollectorMap.get("SomeTextField"), "43.0");
+        assertTrue(dataCollectorMap.containsKey("SomeOtherTextField"));
+        assertEquals(dataCollectorMap.get("SomeOtherTextField"), "true");
+        assertTrue(dataCollectorMap.containsKey("SomeKeywordArrayField"));
+        assertEquals(((String[]) dataCollectorMap.get("SomeKeywordArrayField"))[0], "44.0");
+        assertTrue(dataCollectorMap.containsKey("SomeTextArrayField"));
+        assertEquals(((String[]) dataCollectorMap.get("SomeTextArrayField"))[0], "46.1");
+        assertTrue(dataCollectorMap.containsKey("SomeIntegerArrayField"));
+        assertEquals(((Integer[]) dataCollectorMap.get("SomeIntegerArrayField"))[0].intValue(), 48);
+        assertTrue(dataCollectorMap.containsKey("SomeIntegerField"));
+        assertEquals(dataCollectorMap.get("SomeIntegerField"), 50);
+        assertTrue(dataCollectorMap.containsKey("SomeLongArrayField"));
+        assertEquals(((Long[]) dataCollectorMap.get("SomeLongArrayField"))[0].longValue(), 510000000000001L);
+        assertTrue(dataCollectorMap.containsKey("SomeLongField"));
+        assertEquals(dataCollectorMap.get("SomeLongField"), 530000000000001L);
+        assertTrue(dataCollectorMap.containsKey("SomeFloatArrayField"));
+        assertEquals(((Float[]) dataCollectorMap.get("SomeFloatArrayField"))[0].floatValue(), 54.11111, 0.0001);
+        assertTrue(dataCollectorMap.containsKey("SomeFloatField"));
+        assertEquals((Float) dataCollectorMap.get("SomeFloatField"), 56.11111, 0.0001);
+        assertTrue(dataCollectorMap.containsKey("SomeDoubleArrayField"));
+        assertEquals(((Double[]) dataCollectorMap.get("SomeDoubleArrayField"))[0].doubleValue(), 56.11111111111111D, 0.00000000001D);
+        assertTrue(dataCollectorMap.containsKey("SomeDoubleField"));
+        assertEquals((Double) dataCollectorMap.get("SomeDoubleField"), 58.11111111111111D, 0.00000000001D);
+        assertTrue(dataCollectorMap.containsKey("SomeBooleanArrayField"));
+        assertEquals(((Boolean[]) dataCollectorMap.get("SomeBooleanArrayField"))[0], true);
+        assertTrue(dataCollectorMap.containsKey("SomeBooleanField"));
+        assertEquals((Boolean) dataCollectorMap.get("SomeBooleanField"), false);
+        assertTrue(dataCollectorMap.containsKey("SomeDateArrayField"));
+        assertEquals(((String[]) dataCollectorMap.get("SomeDateArrayField"))[0], "2024-01-01T00:00:00+0000");
+        assertTrue(dataCollectorMap.containsKey("SomeDateField"));
+        assertEquals(dataCollectorMap.get("SomeDateField"), "2024-01-03T00:00:00+0000");
+    }
+    
+    @Test
+    public void mapDataPayloadTestAutoconversionsBooleanConversionOff() {
+        when(this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME)).thenReturn(false);
+        Map<String, Object> storageRecordLocalData = loadObject("/converter/index-autoconversions/wellStorageRecordData.json", storageRecordData.getClass());
+        IndexSchema indexLocalSchema = loadObject("/converter/index-autoconversions/wellStorageSchema.json", IndexSchema.class);
+        Map<String, Object> dataCollectorMap = payloadMapper.mapDataPayload(emptyAsIngestedCoordinatesPaths, indexLocalSchema, storageRecordLocalData, RECORD_TEST_ID);
+
+        assertTrue(dataCollectorMap.containsKey("SomeKeywordField"));
+        assertEquals(dataCollectorMap.get("SomeKeywordField"), 42.0);
+        assertTrue(dataCollectorMap.containsKey("SomeTextField"));
+        assertEquals(dataCollectorMap.get("SomeTextField"), 43.0);
+        assertTrue(dataCollectorMap.containsKey("SomeOtherTextField"));
+        assertEquals(dataCollectorMap.get("SomeOtherTextField"), true);
+        assertTrue(dataCollectorMap.containsKey("SomeKeywordArrayField"));
+        assertEquals(((List<Double>) dataCollectorMap.get("SomeKeywordArrayField")).get(0), 44.0, 0.0001);
+        assertTrue(dataCollectorMap.containsKey("SomeTextArrayField"));
+        assertEquals(((List<Double>) dataCollectorMap.get("SomeTextArrayField")).get(0), 46.1, 0.0001);
+        assertTrue(dataCollectorMap.containsKey("SomeIntegerArrayField"));
+        assertEquals(((Integer[]) dataCollectorMap.get("SomeIntegerArrayField"))[0].intValue(), 48);
+        assertTrue(dataCollectorMap.containsKey("SomeIntegerField"));
+        assertEquals(dataCollectorMap.get("SomeIntegerField"), 50);
+        assertTrue(dataCollectorMap.containsKey("SomeLongArrayField"));
+        assertEquals(((Long[]) dataCollectorMap.get("SomeLongArrayField"))[0].longValue(), 510000000000001L);
+        assertTrue(dataCollectorMap.containsKey("SomeLongField"));
+        assertEquals(dataCollectorMap.get("SomeLongField"), 530000000000001L);
+        assertTrue(dataCollectorMap.containsKey("SomeFloatArrayField"));
+        assertEquals(((Float[]) dataCollectorMap.get("SomeFloatArrayField"))[0].floatValue(), 54.11111, 0.0001);
+        assertTrue(dataCollectorMap.containsKey("SomeFloatField"));
+        assertEquals((Float) dataCollectorMap.get("SomeFloatField"), 56.11111, 0.0001);
+        assertTrue(dataCollectorMap.containsKey("SomeDoubleArrayField"));
+        assertEquals(((Double[]) dataCollectorMap.get("SomeDoubleArrayField"))[0].doubleValue(), 56.11111111111111D, 0.00000000001D);
+        assertTrue(dataCollectorMap.containsKey("SomeDoubleField"));
+        assertEquals((Double) dataCollectorMap.get("SomeDoubleField"), 58.11111111111111D, 0.00000000001D);
+        assertTrue(dataCollectorMap.containsKey("SomeBooleanArrayField"));
+        assertEquals(((Boolean[]) dataCollectorMap.get("SomeBooleanArrayField"))[0], true);
+        assertTrue(dataCollectorMap.containsKey("SomeBooleanField"));
+        assertEquals((Boolean) dataCollectorMap.get("SomeBooleanField"), false);
+        assertTrue(dataCollectorMap.containsKey("SomeDateArrayField"));
+        assertEquals(((String[]) dataCollectorMap.get("SomeDateArrayField"))[0], "2024-01-01T00:00:00+0000");
+        assertTrue(dataCollectorMap.containsKey("SomeDateField"));
+        assertEquals(dataCollectorMap.get("SomeDateField"), "2024-01-03T00:00:00+0000");
     }
 
     private <T> T loadObject(String file, Class<T> valueType) {
