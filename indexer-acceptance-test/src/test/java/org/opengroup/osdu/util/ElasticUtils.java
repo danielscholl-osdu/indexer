@@ -19,8 +19,10 @@ package org.opengroup.osdu.util;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.FieldSort;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.GeoShapeRelation;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
@@ -512,7 +514,13 @@ public class ElasticUtils {
         try {
             ElasticsearchClient client = this.getOrCreateClient(username, password, host);
 
-            SearchRequest request = SearchRequest.of(builder -> builder.index(index));
+            SortOptions idSort = SortOptions.of(
+                sortBuilder -> sortBuilder.field(
+                    FieldSort.of(fieldSortBuilder -> fieldSortBuilder.field("id"))
+                )
+            );
+
+            SearchRequest request = SearchRequest.of(builder -> builder.index(index).sort(idSort));
             SearchResponse<RecordData> searchResponse = client.search(request, RecordData.class);
 
             HitsMetadata<RecordData> hits = searchResponse.hits();
