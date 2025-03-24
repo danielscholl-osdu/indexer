@@ -217,10 +217,13 @@ The two choices to select based on feature flag settings are:
 
 It is important to not have feature flag BagOfWords enabled when mapBooleanToString is disabled as elasticsearch would reject entire documents.
 
-### Note
+### Notes
 
-The mapBooleanToString featue flag can also be set by data partition. The details
+1. The mapBooleanToString featue flag can also be set by data partition. The details
 of that setting are beyond the scope of this document.
+
+2. When re-indexing the data, you will want to use the "force-clean=true" option.
+
 ### FAQ
 
 How do i know if the flags are on?
