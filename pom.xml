@@ -5,7 +5,7 @@
     <groupId>org.opengroup.osdu.indexer</groupId>
     <artifactId>indexer-service</artifactId>
     <packaging>pom</packaging>
-    <version>0.28.0-SNAPSHOT</version>
+    <version>0.29.0-SNAPSHOT</version>
     <description>Indexer Service</description>
 
     <properties>
@@ -127,15 +127,6 @@
         </dependency>
     </dependencies>
 
-    <modules>
-        <module>indexer-core</module>
-        <module>indexer-core-plus</module>
-        <module>provider/indexer-aws</module>
-        <module>provider/indexer-azure</module>
-        <module>provider/indexer-gc</module>
-        <module>provider/indexer-ibm</module>
-    </modules>
-
     <repositories>
         <repository>
             <id>${repo.releases.id}</id>
@@ -170,6 +161,40 @@
                 <publish.snapshots.url>https://community.opengroup.org/api/v4/projects/25/packages/maven</publish.snapshots.url>
                 <publish.releases.url>https://community.opengroup.org/api/v4/projects/25/packages/maven</publish.releases.url>
             </properties>
+        </profile>
+        <profile>
+            <id>core</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <modules>
+                <module>indexer-core</module>
+                <module>indexer-core-plus</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>aws</id>
+            <modules>
+                <module>provider/indexer-aws</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>azure</id>
+            <modules>
+                <module>provider/indexer-azure</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>gc</id>
+            <modules>
+                <module>provider/indexer-gc</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>ibm</id>
+            <modules>
+                <module>provider/indexer-ibm</module>
+            </modules>
         </profile>
     </profiles>
 

@@ -62,6 +62,18 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/cimpl-global.yml"
 
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/aws-one-pipeline.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/azure-one-pipeline.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/gc-one-pipeline.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/ibm-one-pipeline.yml"
+
   - local: "devops/gc/pipeline/override-stages.yml"
   - local: "devops/aws/pipeline/override-stages.yml"
   - local: "devops/core-plus/pipeline/override-stages.yml"

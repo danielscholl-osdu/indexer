@@ -184,3 +184,53 @@ Feature is enabled for OSDU Data Platform deployment with keywordLower flag enab
 All non-flattened text fields are now copied to internal bagOfWords field.
 This allows searching through nested fields using top level text query.
 Also bagOfWords.autocomplete subfield with completion type was added, allowing Search application to implement autocomplete using this field. 
+
+## Mapping of boolean values (string or boolean)
+
+In OSDU releases prior to M22 boolean attributes were indexed and returned in search queries as boolean - for example:
+
+	Well:1.1.0:  "WasBusinessInterestFinancialOperated": true
+
+Then in M22 and M23, boolean values in indexing and search were changed to strings. So a query for the same Well would return:
+
+	Well:1.1.0, "WasBusinessInterestFinancialOperated": "true"
+
+It turned out that adding autocast of a value to the index type caused this since the index type for boolean values were incorrectly set to string, but it didn't affect the actual data before. Other optional features (bag of words, autocomplete, highlighting) required this autocast.
+
+In M25 we know that many users want to have their boolean data being back to boolean in search but because it requires re-indexing, we will give users the choice.
+
+The two choices to select based on feature flag settings are:
+
+1. For people who cannot perform migration
+- Set feature flag mapBooleanToString false (we acknowledge this might seem backward)
+- Behavior reverts to state before autocast was enabled
+- Index types for boolean data are still string
+- Users will see boolean as boolean as autocast is disabled
+- Features relying on matching data to the index types are unavailable (BagOfWords, Autocomplete, Highlight)
+
+2. For new instances with no data and users that need features based on bagOfWords or users want to have data matching index type for possible future feature developments
+- feature flag mapBooleanToString On (we acknowledge this might seem backward)
+- Autocast of values is enabled
+- Index types created for boolean data field are also boolean
+- Users will see boolean as boolean, because autocast will convert them correctly.
+- Reindexing is needed if the feature flag is changed after data are loaded.
+
+It is important to not have feature flag BagOfWords enabled when mapBooleanToString is disabled as elasticsearch would reject entire documents.
+
+### Notes
+
+1. The mapBooleanToString featue flag can also be set by data partition. The details
+of that setting are beyond the scope of this document.
+
+2. When re-indexing the data, you will want to use the "force-clean=true" option.
+
+### FAQ
+
+How do i know if the flags are on?
+
+	Run a search query on a kind with boolean attributes. See if the value is boolean or string, for example, as above:
+	Well:1.1.0:  "WasBusinessInterestFinancialOperated": true
+
+How do i turn them on?
+
+	The feature flags must be set prior to building the OSDU instance, therefore your build provider/CSP must make the changes unless the customer builds the code base themselves.

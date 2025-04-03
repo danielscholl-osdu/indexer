@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Setter
 public class IndexerConfigurationProperties {
+	public static final String MAP_BOOL2STRING_FEATURE_NAME = "featureFlag.mapBooleanToString.enabled";
 	public static final String KEYWORD_LOWER_FEATURE_NAME = "featureFlag.keywordLower.enabled";
 	public static final String BAG_OF_WORDS_FEATURE_NAME = "featureFlag.bagOfWords.enabled";
 	public static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";

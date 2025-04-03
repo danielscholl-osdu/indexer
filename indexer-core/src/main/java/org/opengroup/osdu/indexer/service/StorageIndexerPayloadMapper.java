@@ -35,6 +35,7 @@ import org.opengroup.osdu.indexer.util.PropertyUtil;
 import org.opengroup.osdu.indexer.util.geo.decimator.DecimatedResult;
 import org.opengroup.osdu.indexer.util.geo.decimator.GeoShapeDecimator;
 import org.opengroup.osdu.indexer.util.geo.extractor.PointExtractor;
+import org.opengroup.osdu.indexer.util.BooleanFeatureFlagClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +45,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES_FEATURE_NAME;
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.MAP_BOOL2STRING_FEATURE_NAME;
 
 @Component
 public class StorageIndexerPayloadMapper {
@@ -67,7 +69,10 @@ public class StorageIndexerPayloadMapper {
     private PointExtractor pointExtractor;
 
     @Autowired
-    private IFeatureFlag asIngestedCoordinatesFeatureFlag;
+    private IFeatureFlag featureFlagChecker;
+
+    @Autowired
+    private BooleanFeatureFlagClient booleanFeatureFlagClient;
 
     public Map<String, Object> mapDataPayload(ArrayList<String> asIngestedCoordinatesPaths, IndexSchema storageSchema, Map<String, Object> storageRecordData,
                                               String recordId) {
@@ -81,7 +86,7 @@ public class StorageIndexerPayloadMapper {
 
         mapDataPayload(storageSchema.getDataSchema(), storageRecordData, recordId, dataCollectorMap);
         mapVirtualPropertiesPayload(storageSchema, recordId, dataCollectorMap);
-        if (this.asIngestedCoordinatesFeatureFlag.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)) {
+        if (this.featureFlagChecker.isFeatureEnabled(AS_INGESTED_COORDINATES_FEATURE_NAME)) {
             mapAsIngestedCoordinatesPayload(recordId, asIngestedCoordinatesPaths, storageRecordData, dataCollectorMap);
         }
 
@@ -115,11 +120,38 @@ public class StorageIndexerPayloadMapper {
             switch (elasticType) {
                 case KEYWORD:
                 case TEXT:
-                    this.attributeParsingService.tryParseString(recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
+                    /*
+                        Logic behing feature flag settings
+                        If service-level FF is ON for a given deployment/environment, then the FF is ON for all the data partitions under the deployment/environment
+                        If service-level FF is OFF but it is ON for a given data partition, then the FF is ON for the given data partition
+
+                        With this solution, the service providers can decide which level of FF should be turned on. For example,
+                        If there are only few data partitions in a given deployment and there are not many data needed to be indexed, 
+                        the service provider can turn on the service-level FF and re-index all the data partitions in one shot.
+                        If there are lots of data partitions or some data partitions have lots of data in a given deployment, step should be as following.
+
+                        1. Turn the service-level FF to be OFF
+                        2. Turn on the FF via partition service for a given data partition and re-index all the data in the given data partition
+                        3. Repeat step 2 until all the data partitions have been re-indexed
+                        4. Turn the service-level FF to be ON and re-deploy the service. So all new data partitions apply the fix
+                    */
+                    // Feature flag enforces conversion of values to string when index type is string, this is required for features using
+                    // copy_to mechanic like bag of words, however originally index type for boolean values was string so this would convert
+                    // those values to string without changing the index type, changing index type would require migration so it is also
+                    // under this feature flag as not all users will be interested with it
+                    if (this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME) || booleanFeatureFlagClient.isEnabled(MAP_BOOL2STRING_FEATURE_NAME, false)) {
+                        this.attributeParsingService.tryParseString(recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
+                    } else {
+                        dataCollectorMap.put(schemaPropertyName, storageRecordValue);    
+                    }
                     break;
                 case KEYWORD_ARRAY:
                 case TEXT_ARRAY:
-                    this.attributeParsingService.tryParseValueArray(String.class, recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
+                    if (this.featureFlagChecker.isFeatureEnabled(MAP_BOOL2STRING_FEATURE_NAME) || booleanFeatureFlagClient.isEnabled(MAP_BOOL2STRING_FEATURE_NAME, false)) {
+                        this.attributeParsingService.tryParseValueArray(String.class, recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
+                    } else {
+                        dataCollectorMap.put(schemaPropertyName, storageRecordValue);
+                    }
                     break;
                 case INTEGER_ARRAY:
                     this.attributeParsingService.tryParseValueArray(Integer.class, recordId, schemaPropertyName, storageRecordValue, dataCollectorMap);
