@@ -22,9 +22,9 @@
                 "type": "string"
               },
               "Location": {
-                "$ref": "#/definitions/opendes:wks:core_dl_geopoint_drillable:1.0.0",
+                "$ref": "#/definitions/opendes:wks:core_dl_geopoint_drillable:4.0.0",
                 "description": "The wellbore's position with drillable attribute.",
-                "format": "core:dl:geopoint:1.0.0",
+                "format": "core:dl:geopoint:4.0.0",
                 "title": "WGS 84 Position",
                 "type": "object"
               },
@@ -40,7 +40,7 @@
       }
     },
     "definitions": {
-      "opendes:wks:core_dl_geopoint_drillable:1.0.0": {
+      "opendes:wks:core_dl_geopoint_drillable:4.0.0": {
         "description": "A 2D point location in latitude and longitude referenced to WGS 84 if not specified otherwise and drillable attribute.",
         "properties": {
           "latitude": {

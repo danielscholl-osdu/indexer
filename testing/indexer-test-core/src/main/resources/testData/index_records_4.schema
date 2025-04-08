@@ -7,7 +7,7 @@
     },
     {
       "path": "Location",
-      "kind": "core:dl:geopoint:1.0.0"
+      "kind": "core:dl:geopoint:4.0.0"
     },
     {
       "path": "Basin",
