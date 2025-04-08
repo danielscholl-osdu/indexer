@@ -60,8 +60,8 @@ include:
     file: "cloud-providers/gc-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/core-global.yml"
-    
+    file: "cloud-providers/cimpl-global.yml"
+
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/aws-one-pipeline.yml"
 
@@ -100,7 +100,7 @@ download_plugins:
 
   only:
     variables:
-      - $CORE == '1'
+      - $CIMPL == '1'
 
 aws-test-java:
   image: $CI_REGISTRY/osdu/platform/deployment-and-operations/base-containers-aws/aws-maven/aws-maven:v2.1
