@@ -70,6 +70,7 @@ import org.opengroup.osdu.indexer.service.IndicesService;
 import org.opengroup.osdu.indexer.service.ReindexService;
 import org.opengroup.osdu.indexer.service.SchemaEventsProcessor;
 import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.FeatureFlagStateConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -148,6 +149,8 @@ public class RecordIndexerApiTest {
   private IPartitionFactory iPartitionFactory;
   @MockBean
   private IPartitionProvider iPartitionProvider;
+  @MockBean
+  private FeatureFlagStateConfiguration stateConfiguration;
 
   @ParameterizedTest
   @CsvSource({"true,true", "true,false", "false,false", "false, true"})

@@ -1,12 +1,16 @@
 package org.opengroup.osdu.common;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.opengroup.osdu.response.FeatureFlagStateMock;
 import org.opengroup.osdu.response.InfoResponseMock;
 import org.opengroup.osdu.util.Config;
 import org.opengroup.osdu.util.ElasticUtils;
@@ -14,6 +18,16 @@ import org.opengroup.osdu.util.HTTPClient;
 
 @Slf4j
 public class InfoBase extends TestsBase {
+
+  private static final List<String> expectedFeatureFlags = List.of(
+      "featureFlag.mapBooleanToString.enabled",
+      "featureFlag.asIngestedCoordinates.enabled",
+      "featureFlag.keywordLower.enabled",
+      "featureFlag.bagOfWords.enabled",
+      "collaborations-enabled",
+      "custom-index-analyzer-enabled",
+      "index-augmenter-enabled"
+  );
 
   protected Map<String, String> headers = new HashMap<>();
   private InfoResponseMock response;
@@ -66,6 +80,14 @@ public class InfoBase extends TestsBase {
       assertNotNull(response.getBranch());
       assertNotNull(response.getCommitId());
       assertNotNull(response.getCommitMessage());
+      List<FeatureFlagStateMock> featureFlagStates = response.getFeatureFlagStates();
+      assertNotNull(featureFlagStates);
+      assertFalse(featureFlagStates.isEmpty());
+
+      for (String ffName : expectedFeatureFlags){
+        assertTrue(featureFlagStates.stream().anyMatch(ffState -> ffState.getName().equals(ffName)));
+      }
+
     } else {
       log.warn("Version info endpoint provided null response");
     }

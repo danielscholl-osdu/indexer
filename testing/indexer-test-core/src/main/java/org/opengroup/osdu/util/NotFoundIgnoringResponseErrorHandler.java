@@ -12,9 +12,4 @@ public class NotFoundIgnoringResponseErrorHandler extends DefaultResponseErrorHa
     public boolean hasError(ClientHttpResponse response) throws IOException {
         return super.hasError(response) && response.getRawStatusCode() != HttpStatus.NOT_FOUND.value();
     }
-
-    @Override
-    protected boolean hasError(HttpStatus statusCode) {
-        return super.hasError(statusCode) && statusCode != HttpStatus.NOT_FOUND;
-    }
 }
