@@ -20,12 +20,16 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CustomIndexAnalyzerSetting {
-    private static final String PROPERTY_NAME =  "custom-index-analyzer-enabled";
+    public static final String PROPERTY_NAME =  "custom-index-analyzer-enabled";
 
     @Autowired
     private BooleanFeatureFlagClient booleanFeatureFlagClient;
 
     public boolean isEnabled() {
         return booleanFeatureFlagClient.isEnabled(PROPERTY_NAME, false);
+    }
+
+    public boolean isEnabled(String dataPartitionId){
+        return booleanFeatureFlagClient.isEnabled(PROPERTY_NAME, true, dataPartitionId);
     }
 }

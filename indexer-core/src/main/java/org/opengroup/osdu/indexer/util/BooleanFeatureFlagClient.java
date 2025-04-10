@@ -17,7 +17,11 @@ package org.opengroup.osdu.indexer.util;
 
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.partition.*;
+import org.opengroup.osdu.core.common.partition.IPartitionFactory;
+import org.opengroup.osdu.core.common.partition.IPartitionProvider;
+import org.opengroup.osdu.core.common.partition.PartitionException;
+import org.opengroup.osdu.core.common.partition.PartitionInfo;
+import org.opengroup.osdu.core.common.partition.Property;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.indexer.cache.partitionsafe.FeatureFlagCache;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,25 +48,31 @@ public class BooleanFeatureFlagClient {
 
     public boolean isEnabled(String featureName, boolean defaultValue) {
         Boolean isEnabled = this.cache.get(featureName);
-        if (isEnabled != null)
+        if (isEnabled != null) {
             return isEnabled;
+        }
 
         String dataPartitionId = headers.getPartitionId();
+        isEnabled = isEnabled(featureName, defaultValue, dataPartitionId);
+        this.cache.put(featureName, isEnabled);
+        return isEnabled;
+    }
+
+    public boolean isEnabled(String featureName, boolean defaultValue, String dataPartitionId){
+        boolean isEnabled = defaultValue;
         try {
             PartitionInfo partitionInfo = getPartitionInfo(dataPartitionId);
             isEnabled = getFeatureValue(partitionInfo, featureName, defaultValue);
             this.logger.info(String.format("BooleanFeatureFlagClient: The feature flag '%s' in data partition '%s' is set to %s", featureName, dataPartitionId, isEnabled));
         } catch (Exception e) {
-            isEnabled = defaultValue;
             this.logger.error(String.format("BooleanFeatureFlagClient: Error on getting the feature flag '%s' for data partition '%s'. Using default value %s.", featureName, dataPartitionId, isEnabled), e);
         }
-        this.cache.put(featureName, isEnabled);
         return isEnabled;
     }
 
     private PartitionInfo getPartitionInfo(String dataPartitionId) throws PartitionException {
         try {
-            DpsHeaders partitionHeaders = DpsHeaders.createFromMap(headers.getHeaders());
+            DpsHeaders partitionHeaders = new DpsHeaders();
             partitionHeaders.put(DpsHeaders.AUTHORIZATION, this.tokenService.getIdToken(dataPartitionId));
 
             IPartitionProvider partitionProvider = this.factory.create(partitionHeaders);
