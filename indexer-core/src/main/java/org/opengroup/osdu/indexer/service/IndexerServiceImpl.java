@@ -74,15 +74,6 @@ import org.opengroup.osdu.indexer.util.IndexerQueueTaskBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import jakarta.inject.Inject;
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES_FEATURE_NAME;
 
 @Service
 @Primary
@@ -234,7 +225,8 @@ public class IndexerServiceImpl implements IndexerService {
             errorMessage = e.getMessage();
             throw e;
         } catch (Exception e) {
-            errorMessage = "error indexing records";
+            errorMessage = "Error indexing records: " + e.getMessage();
+            this.jobStatus.getDebugInfos().add(e.toString());
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "An unknown error has occurred.", e);
         } finally {
             this.jobStatus.finalizeRecordStatus(errorMessage);
@@ -762,7 +754,7 @@ public class IndexerServiceImpl implements IndexerService {
         }catch (AppException e){
             throw e;
         } catch (Exception e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ELASTIC_ERROR, "Error indexing records.", e);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ELASTIC_ERROR, e.getMessage(), e);
         }
         return new BulkRequestResult(failureRecordIds, retryUpsertRecordIds);
     }
