@@ -191,7 +191,7 @@ In OSDU releases prior to M22 boolean attributes were indexed and returned in se
 
 	Well:1.1.0:  "WasBusinessInterestFinancialOperated": true
 
-Then in M22 and M23, boolean values in indexing and search were changed to strings. So a query for the same Well would return:
+Then in M22, M23, and M24 boolean values in indexing and search were changed to strings. So a query for the same Well would return:
 
 	Well:1.1.0, "WasBusinessInterestFinancialOperated": "true"
 
@@ -201,21 +201,18 @@ In M25 we know that many users want to have their boolean data being back to boo
 
 The two choices to select based on feature flag settings are:
 
-1. For people who cannot perform migration
-- Set feature flag mapBooleanToString false (we acknowledge this might seem backward)
-- Behavior reverts to state before autocast was enabled
+1. For people who cannot perform migration (i.e. do not wish to re-index)
+- Set feature flag mapBooleanToString false, as it is by default (we acknowledge this might seem backward)
+- Behavior remains the same as M22-M24
 - Index types for boolean data are still string
-- Users will see boolean as boolean as autocast is disabled
-- Features relying on matching data to the index types are unavailable (BagOfWords, Autocomplete, Highlight)
+- Users will continue to see boolean as string
 
-2. For new instances with no data and users that need features based on bagOfWords or users want to have data matching index type for possible future feature developments
+2. For new instances with no data and users that want to have data matching index type for possible future feature developments
 - feature flag mapBooleanToString On (we acknowledge this might seem backward)
 - Autocast of values is enabled
 - Index types created for boolean data field are also boolean
 - Users will see boolean as boolean, because autocast will convert them correctly.
 - Reindexing is needed if the feature flag is changed after data are loaded.
-
-It is important to not have feature flag BagOfWords enabled when mapBooleanToString is disabled as elasticsearch would reject entire documents.
 
 ### Notes
 
