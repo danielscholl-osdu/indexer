@@ -30,7 +30,7 @@
   
   <properties>
       <deployment.environment>dev</deployment.environment>
-      <netty.version>4.1.115.Final</netty.version>
+      <netty.version>4.1.119.Final</netty.version>
       <mockito.version>3.11.2</mockito.version>
   </properties>
 
@@ -63,18 +63,51 @@
         <groupId>org.opengroup.osdu.indexer</groupId>
         <artifactId>indexer-core</artifactId>
         <version>0.29.0-SNAPSHOT</version>
+        <exclusions>
+            <exclusion>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+            </exclusion>
+        </exclusions>
     </dependency>
     <dependency>
         <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
         <version>4.0.0</version>
+        <exclusions>
+            <exclusion>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+            </exclusion>
+        </exclusions>
     </dependency>
 
     <!-- Third party Apache 2.0 license packages -->
     <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>10.1.39</version>
+    </dependency>
+      <dependency>
+          <groupId>net.minidev</groupId>
+          <artifactId>json-smart</artifactId>
+          <version>2.5.2</version>
+      </dependency>
+    <dependency>
         <groupId>org.springframework.security</groupId>
         <artifactId>spring-security-config</artifactId>
+        <exclusions>
+            <exclusion>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-crypto</artifactId>
+            </exclusion>
+        </exclusions>
     </dependency>
+      <dependency>
+          <groupId>org.springframework.security</groupId>
+          <artifactId>spring-security-crypto</artifactId>
+          <version>6.3.8</version>
+      </dependency>
     <dependency>
         <groupId>org.springframework.security</groupId>
         <artifactId>spring-security-web</artifactId>
