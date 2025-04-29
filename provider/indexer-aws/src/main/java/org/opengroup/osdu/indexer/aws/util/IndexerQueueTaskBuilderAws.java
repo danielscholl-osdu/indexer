@@ -16,14 +16,14 @@
 
 package org.opengroup.osdu.indexer.aws.util;
 
-import com.amazonaws.services.sqs.AmazonSQS;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import lombok.extern.slf4j.Slf4j;
-import org.opengroup.osdu.core.aws.sqs.AmazonSQSConfig;
-import com.amazonaws.services.sqs.model.MessageAttributeValue;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
+import org.opengroup.osdu.core.aws.v2.sqs.AmazonSQSConfig;
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import com.google.gson.Gson;
-import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.search.RecordChangedMessages;
 import org.opengroup.osdu.indexer.model.Constants;
@@ -50,7 +50,7 @@ public class IndexerQueueTaskBuilderAws extends IndexerQueueTaskBuilder {
     private static final int MAX_RETRY_DELAY_SECONDS = 900; // 15 minutes (900 seconds) is the hard limit SQS sets of message delays
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexerQueueTaskBuilderAws.class);
 
-    private AmazonSQS sqsClient;
+    private SqsClient sqsClient;
 
     private String storageQueue;
     private String dlq;
@@ -85,29 +85,36 @@ public class IndexerQueueTaskBuilderAws extends IndexerQueueTaskBuilder {
     @Override
     public void createReIndexTask(String payload,DpsHeaders headers) {
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+        messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
+        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
         headers.addCorrelationIdIfMissing();
-        messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getCorrelationId()));
-        messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getUserEmail()));
-        messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getAuthorization()));
-        messageAttributes.put("ReIndexCursor", new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue("True"));
-        SendMessageRequest sendMessageRequest = new SendMessageRequest()
-                .withQueueUrl(storageQueue)
-                .withMessageBody(payload)
-                .withMessageAttributes(messageAttributes);
+        messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getCorrelationId())
+                .build());
+        messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getUserEmail())
+                .build());
+        messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getAuthorization())
+                .build());
+        messageAttributes.put("ReIndexCursor", MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue("True")
+                .build());
+        SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
+                .queueUrl(storageQueue)
+                .messageBody(payload)
+                .messageAttributes(messageAttributes)
+                .build();
         sqsClient.sendMessage(sendMessageRequest);
     }
     @Override
@@ -117,31 +124,36 @@ public class IndexerQueueTaskBuilderAws extends IndexerQueueTaskBuilder {
 
     private void createTask(String payload, DpsHeaders headers) {
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+        messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
+        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
         headers.addCorrelationIdIfMissing();
-        messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getCorrelationId()));
-        messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getUserEmail()));
-        messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(headers.getAuthorization()));
+        messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getCorrelationId())
+                .build());
+        messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getUserEmail())
+                .build());
+        messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(headers.getAuthorization())
+                .build());
 
         log.debug("Is isFeatureEnabledAndHeaderExists: {}", xCollaborationHolder.isFeatureEnabledAndHeaderExists());
         String xCollabValue = headers.getHeaders().get(DpsHeaders.COLLABORATION);
         if (xCollabValue != null) {
             xCollaborationHolder.setxCollaborationHeader(xCollabValue);
             if (xCollaborationHolder.isFeatureEnabledAndHeaderExists()) {
-                messageAttributes.put(XcollaborationHolder.X_COLLABORATION, new MessageAttributeValue()
-                        .withDataType(TYPE_STRING)
-                        .withStringValue(xCollaborationHolder.getCollaborationContext().orElseThrow().getId()));
+                messageAttributes.put(XcollaborationHolder.X_COLLABORATION, MessageAttributeValue.builder()
+                        .dataType(TYPE_STRING)
+                        .stringValue(xCollaborationHolder.getCollaborationContext().orElseThrow().getId()).build());
             }
         }
 
@@ -163,31 +175,35 @@ public class IndexerQueueTaskBuilderAws extends IndexerQueueTaskBuilder {
         LOGGER.info("Delay (in seconds) before next retry: {}", delay);
 
         // Append the retry count to the message attributes
-        messageAttributes.put(RETRY_STRING, new MessageAttributeValue()
-                .withDataType(TYPE_STRING)
-                .withStringValue(String.valueOf(retryCount))
+        messageAttributes.put(RETRY_STRING, MessageAttributeValue.builder()
+                .dataType(TYPE_STRING)
+                .stringValue(String.valueOf(retryCount))
+                .build()
         );
         // Append the ancestry kinds used to prevent circular chasing
         if(message.getAttributes().containsKey(Constants.ANCESTRY_KINDS)) {
             delay = Math.max(delay, Constants.CHASING_MESSAGE_DELAY_SECONDS);
-            messageAttributes.put(Constants.ANCESTRY_KINDS, new MessageAttributeValue()
-                    .withDataType(TYPE_STRING)
-                    .withStringValue(message.getAttributes().get(Constants.ANCESTRY_KINDS)));
+            messageAttributes.put(Constants.ANCESTRY_KINDS, MessageAttributeValue.builder()
+                    .dataType(TYPE_STRING)
+                    .stringValue(message.getAttributes().get(Constants.ANCESTRY_KINDS))
+                    .build());
         }
 
         // Send a message with an attribute and a delay
         final SendMessageRequest sendMessageRequest ;
         if (retryCount< 10) {
 
-            sendMessageRequest = new SendMessageRequest()
-                    .withQueueUrl(storageQueue)
-                    .withMessageBody(message.getData())
-                    .withDelaySeconds(Integer.valueOf(delay))
-                    .withMessageAttributes(messageAttributes);
+            sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(storageQueue)
+                    .messageBody(message.getData())
+                    .delaySeconds(Integer.valueOf(delay))
+                    .messageAttributes(messageAttributes)
+                    .build();
         }else{
-            sendMessageRequest = new SendMessageRequest()
-                    .withQueueUrl(dlq)
-                    .withMessageBody(message.getData());
+            sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(dlq)
+                    .messageBody(message.getData())
+                    .build();
         }
         log.debug("sendMessageRequest x-collab: {}", sendMessageRequest);
         sqsClient.sendMessage(sendMessageRequest);

@@ -16,7 +16,7 @@
 
 package org.opengroup.osdu.util;
 
-import org.opengroup.osdu.core.aws.cognito.AWSCognitoClient;
+import org.opengroup.osdu.core.aws.v2.cognito.AWSCognitoClient;
 
 class JwtTokenUtil {
     static String getAccessToken() {
