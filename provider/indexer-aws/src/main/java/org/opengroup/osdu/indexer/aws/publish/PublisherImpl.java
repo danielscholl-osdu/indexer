@@ -16,25 +16,25 @@
 
 package org.opengroup.osdu.indexer.aws.publish;
 
-import com.amazonaws.services.sns.model.PublishRequest;
-import com.amazonaws.services.sns.AmazonSNS;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.SnsClient;
 
-import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
-import org.opengroup.osdu.core.aws.sns.PublishRequestBuilder;
+import org.opengroup.osdu.core.aws.v2.sns.AmazonSNSConfig;
+import org.opengroup.osdu.core.aws.v2.sns.PublishRequestBuilder;
 import org.opengroup.osdu.core.common.model.indexer.RecordStatus;
 import org.opengroup.osdu.indexer.provider.interfaces.IPublisher;
 import org.opengroup.osdu.core.common.model.indexer.JobStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sLocalParameterProvider;
 import jakarta.inject.Inject;
 
 @Component
 public class PublisherImpl implements IPublisher {
 
-    AmazonSNS snsClient;
+    SnsClient snsClient;
     private String amazonSNSTopic;
 
     @Value("${aws.region}")

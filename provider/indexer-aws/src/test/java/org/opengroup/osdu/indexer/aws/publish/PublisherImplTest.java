@@ -16,10 +16,9 @@
 
 package org.opengroup.osdu.indexer.aws.publish;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.MessageAttributeValue;
-import com.amazonaws.services.sns.model.PublishRequest;
-import com.amazonaws.services.sns.model.PublishResult;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,10 +27,10 @@ import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
-import org.opengroup.osdu.core.aws.sns.PublishRequestBuilder;
+import org.opengroup.osdu.core.aws.v2.sns.AmazonSNSConfig;
+import org.opengroup.osdu.core.aws.v2.sns.PublishRequestBuilder;
 import org.opengroup.osdu.core.common.model.indexer.RecordStatus;
-import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.indexer.aws.IndexerAwsApplication;
 import org.opengroup.osdu.core.common.model.indexer.JobStatus;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,7 +53,7 @@ public class PublisherImplTest {
     private PublisherImpl publisher = new PublisherImpl();
 
     @Mock
-    AmazonSNS snsClient;
+    SnsClient snsClient;
 
     @Test
     public void publishStatusChangedTagsToTopic() throws Exception {
@@ -62,7 +61,7 @@ public class PublisherImplTest {
         DpsHeaders headers = new DpsHeaders();
         JobStatus jobStatus = new JobStatus();
         Mockito.when(snsClient.publish(Mockito.any(PublishRequest.class)))
-                .thenReturn(Mockito.any(PublishResult.class));
+                .thenReturn(Mockito.any(PublishResponse.class));
 
         PublishRequestBuilder<RecordStatus> publishRequestBuilder = new PublishRequestBuilder<>();
         publishRequestBuilder.setGeneralParametersFromHeaders(headers);

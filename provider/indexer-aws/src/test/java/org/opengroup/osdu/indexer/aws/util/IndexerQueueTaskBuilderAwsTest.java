@@ -25,9 +25,9 @@ import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.core.aws.sqs.AmazonSQSConfig;
-import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
+import org.opengroup.osdu.core.aws.v2.sqs.AmazonSQSConfig;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.search.RecordChangedMessages;
@@ -39,9 +39,9 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.MessageAttributeValue;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import org.opengroup.osdu.indexer.model.XcollaborationHolder;
 
 import static org.mockito.ArgumentMatchers.eq;
@@ -64,7 +64,7 @@ public class IndexerQueueTaskBuilderAwsTest {
     IndexerQueueTaskBuilderAws builder;
 
     @Mock
-    AmazonSQS sqsClient;
+    SqsClient sqsClient;
 
     @Mock
     Gson gson;
@@ -83,31 +83,37 @@ public class IndexerQueueTaskBuilderAwsTest {
         DpsHeaders headers = new DpsHeaders();
 
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+        messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
+        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
         headers.addCorrelationIdIfMissing();
-        messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getCorrelationId()));
-        messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getUserEmail()));
-        messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getAuthorization()));
-        messageAttributes.put(retryString, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(String.valueOf(1)));
+        messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getCorrelationId())
+                .build());
+        messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getUserEmail())
+                .build());
+        messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getAuthorization())
+                .build());
+        messageAttributes.put(retryString, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(String.valueOf(1))
+                .build());
 
         RecordChangedMessages message = realGson.fromJson(payload, RecordChangedMessages.class);
 
         when(gson.fromJson(payload, RecordChangedMessages.class)).thenReturn(message);
 
-        SendMessageRequest sendMessageRequest = new SendMessageRequest().withQueueUrl(null).withMessageBody(message.getData()).withDelaySeconds(new Integer(INITIAL_RETRY_DELAY_SECONDS)).withMessageAttributes(messageAttributes);
+        SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(null).messageBody(message.getData()).delaySeconds(INITIAL_RETRY_DELAY_SECONDS).messageAttributes(messageAttributes).build();
 
         builder.createWorkerTask(payload, headers);
 
@@ -125,31 +131,37 @@ public class IndexerQueueTaskBuilderAwsTest {
         DpsHeaders headers = new DpsHeaders();
 
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+        messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
+        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
         headers.addCorrelationIdIfMissing();
-        messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getCorrelationId()));
-        messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getUserEmail()));
-        messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getAuthorization()));
-        messageAttributes.put(retryString, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(String.valueOf(1)));
+        messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getCorrelationId())
+                .build());
+        messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getUserEmail())
+                .build());
+        messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getAuthorization())
+                .build());
+        messageAttributes.put(retryString, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(String.valueOf(1))
+                .build());
 
         RecordChangedMessages message = realGson.fromJson(payload_retry, RecordChangedMessages.class);
 
         when(gson.fromJson(payload, RecordChangedMessages.class)).thenReturn(message);
 
-        SendMessageRequest sendMessageRequest = new SendMessageRequest().withQueueUrl(null).withMessageBody(message.getData());
+        SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(null).messageBody(message.getData()).build();
 
         builder.createWorkerTask(payload, headers);
 
@@ -169,28 +181,35 @@ public class IndexerQueueTaskBuilderAwsTest {
         RecordChangedMessages message = realGson.fromJson(payload_ancestry_kinds, RecordChangedMessages.class);
 
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+        messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
+        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
         headers.addCorrelationIdIfMissing();
-        messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getCorrelationId()));
-        messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getUserEmail()));
-        messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getAuthorization()));
-        messageAttributes.put(retryString, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(String.valueOf(1)));
-        messageAttributes.put(Constants.ANCESTRY_KINDS, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(message.getAttributes().get(Constants.ANCESTRY_KINDS)));
+        messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getCorrelationId())
+                .build());
+        messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getUserEmail())
+                .build());
+        messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getAuthorization())
+                .build());
+        messageAttributes.put(retryString, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(String.valueOf(1))
+                .build());
+        messageAttributes.put(Constants.ANCESTRY_KINDS, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(message.getAttributes().get(Constants.ANCESTRY_KINDS))
+                .build());
 
       
 
@@ -198,7 +217,7 @@ public class IndexerQueueTaskBuilderAwsTest {
 
         int delay = Math.max(INITIAL_RETRY_DELAY_SECONDS, Constants.CHASING_MESSAGE_DELAY_SECONDS);
 
-        SendMessageRequest sendMessageRequest = new SendMessageRequest().withQueueUrl(null).withMessageBody(message.getData()).withDelaySeconds(new Integer(delay)).withMessageAttributes(messageAttributes);
+        SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(null).messageBody(message.getData()).delaySeconds(delay).messageAttributes(messageAttributes).build();
 
         builder.createWorkerTask(payload, headers);
 
@@ -214,27 +233,33 @@ public class IndexerQueueTaskBuilderAwsTest {
         DpsHeaders headers = new DpsHeaders();
 
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+        messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
+        messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                .build());
         headers.addCorrelationIdIfMissing();
-        messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getCorrelationId()));
-        messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getUserEmail()));
-        messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue(headers.getAuthorization()));
-        messageAttributes.put("ReIndexCursor", new MessageAttributeValue()
-                .withDataType("String")
-                .withStringValue("True"));
+        messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getCorrelationId())
+                .build());
+        messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getUserEmail())
+                .build());
+        messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(headers.getAuthorization())
+                .build());
+        messageAttributes.put("ReIndexCursor", MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue("True")
+                .build());
 
-        SendMessageRequest sendMessageRequest = new SendMessageRequest().withQueueUrl(null).withMessageBody(payload).withMessageAttributes(messageAttributes);
+        SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(null).messageBody(payload).messageAttributes(messageAttributes).build();
 
         builder.createReIndexTask(payload, headers);
 
@@ -275,31 +300,37 @@ public class IndexerQueueTaskBuilderAwsTest {
                 DpsHeaders headers = new DpsHeaders();
 
                 Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-                messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-                messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+                messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                        .build());
+                messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                        .build());
                 headers.addCorrelationIdIfMissing();
-                messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getCorrelationId()));
-                messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getUserEmail()));
-                messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getAuthorization()));
-                messageAttributes.put(retryString, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(String.valueOf(1)));
+                messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getCorrelationId())
+                        .build());
+                messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getUserEmail())
+                        .build());
+                messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getAuthorization())
+                        .build());
+                messageAttributes.put(retryString, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(String.valueOf(1))
+                        .build());
 
                 when(xCollaborationHolder.isFeatureEnabledAndHeaderExists()).thenReturn(false);
 
                 RecordChangedMessages message = realGson.fromJson(payload, RecordChangedMessages.class);
 
-                SendMessageRequest sendMessageRequest = new SendMessageRequest().withQueueUrl(storage_sqs_url).withMessageBody(message.getData()).withDelaySeconds(new Integer(INITIAL_RETRY_DELAY_SECONDS)).withMessageAttributes(messageAttributes);
+                SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(storage_sqs_url).messageBody(message.getData()).delaySeconds(INITIAL_RETRY_DELAY_SECONDS).messageAttributes(messageAttributes).build();
 
                 builder.createWorkerTask(payload, headers);
 
@@ -331,28 +362,35 @@ public class IndexerQueueTaskBuilderAwsTest {
                 DpsHeaders headers = new DpsHeaders();
 
                 Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-                messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-                messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+                messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                        .build());
+                messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                        .build());
                 headers.addCorrelationIdIfMissing();
-                messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getCorrelationId()));
-                messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getUserEmail()));
-                messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getAuthorization()));
-                messageAttributes.put(retryString, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(String.valueOf(1)));
-                messageAttributes.put(XcollaborationHolder.X_COLLABORATION, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(xCollabFieldValue));
+                messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getCorrelationId())
+                        .build());
+                messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getUserEmail())
+                        .build());
+                messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getAuthorization())
+                        .build());
+                messageAttributes.put(retryString, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(String.valueOf(1))
+                        .build());
+                messageAttributes.put(XcollaborationHolder.X_COLLABORATION, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(xCollabFieldValue)
+                        .build());
 
                 headers.getHeaders().put(DpsHeaders.COLLABORATION, xCollabHeaderValue);
 
@@ -368,7 +406,7 @@ public class IndexerQueueTaskBuilderAwsTest {
 
                 RecordChangedMessages message = realGson.fromJson(payload, RecordChangedMessages.class);
 
-                SendMessageRequest sendMessageRequest = new SendMessageRequest().withQueueUrl(storage_sqs_url).withMessageBody(message.getData()).withDelaySeconds(new Integer(INITIAL_RETRY_DELAY_SECONDS)).withMessageAttributes(messageAttributes);
+                SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(storage_sqs_url).messageBody(message.getData()).delaySeconds(INITIAL_RETRY_DELAY_SECONDS).messageAttributes(messageAttributes).build();
 
                 builder.createWorkerTask(payload, headers);
 
@@ -400,29 +438,35 @@ public class IndexerQueueTaskBuilderAwsTest {
                 DpsHeaders headers = new DpsHeaders();
 
                 Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-                messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                        .withDataType("String")
-                        .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-                messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                        .withDataType("String")
-                        .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
+                messageAttributes.put(DpsHeaders.ACCOUNT_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                        .build());
+                messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getPartitionIdWithFallbackToAccountId())
+                        .build());
                 headers.addCorrelationIdIfMissing();
-                messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                        .withDataType("String")
-                        .withStringValue(headers.getCorrelationId()));
-                messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                        .withDataType("String")
-                        .withStringValue(headers.getUserEmail()));
-                messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                        .withDataType("String")
-                        .withStringValue(headers.getAuthorization()));
-                messageAttributes.put(retryString, new MessageAttributeValue()
-                        .withDataType("String")
-                        .withStringValue(String.valueOf(1)));
+                messageAttributes.put(DpsHeaders.CORRELATION_ID, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getCorrelationId())
+                        .build());
+                messageAttributes.put(DpsHeaders.USER_EMAIL, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getUserEmail())
+                        .build());
+                messageAttributes.put(DpsHeaders.AUTHORIZATION, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(headers.getAuthorization())
+                        .build());
+                messageAttributes.put(retryString, MessageAttributeValue.builder()
+                        .dataType("String")
+                        .stringValue(String.valueOf(1))
+                        .build());
 
                 RecordChangedMessages message = realGson.fromJson(payload_retry, RecordChangedMessages.class);
 
-                SendMessageRequest sendMessageRequest = new SendMessageRequest().withQueueUrl(deadletter_queue_sqs_url).withMessageBody(message.getData());
+                SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(deadletter_queue_sqs_url).messageBody(message.getData()).build();
 
                 builder.createWorkerTask(payload_retry, headers);
 
