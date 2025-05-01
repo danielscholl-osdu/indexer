@@ -186,7 +186,7 @@ public class SearchClientTest {
     public void search_with_normalQuery_and_without_retry_when_bad_request_exception() throws Exception {
         SearchResponse searchResponse = mock(SearchResponse.class);
         List<ErrorResponse> errorResponses = new ArrayList<>();
-        errorResponses.add(ErrorResponse.of(es -> es.status(400).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Request Timeout"))))));
+        errorResponses.add(ErrorResponse.of(es -> es.status(400).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Bad Request"))))));
         when(client.search(any(SearchRequest.class), eq((Type)Map.class))).thenAnswer(invocationOnMock -> {
             if(!errorResponses.isEmpty()) {
                 ErrorResponse errorResponse = errorResponses.remove(0);
