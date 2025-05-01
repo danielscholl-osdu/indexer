@@ -112,7 +112,7 @@ public class SearchClientTest {
     }
 
     @Test
-    public void search_with_normalQuery_and_retry_whenSearchHitsIsNotEmpty() throws Exception {
+    public void search_with_normalQuery_and_retry_when_few_exceptions() throws Exception {
         List<Hit<Map<String, Object>>> hits = new ArrayList<>();
         hits.add(searchHit);
         Map<String, Object> hitFields = new HashMap<>();
