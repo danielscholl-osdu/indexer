@@ -16,12 +16,7 @@
 package org.opengroup.osdu.indexer.util;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ExpandWildcard;
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.SearchType;
-import co.elastic.clients.elasticsearch._types.SortOptions;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.*;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.ClosePointInTimeRequest;
 import co.elastic.clients.elasticsearch.core.OpenPointInTimeRequest;
@@ -64,6 +59,10 @@ public class SearchClient {
     private final static int MAX_PAGE_SIZE = 5000; //5k
     private final static int MAX_RECORDS_COUNT = Integer.MAX_VALUE;
     private final Time SEARCH_TIMEOUT = Time.of(t -> t.time("120s"));
+
+    private final int MAX_SEARCH_RETRY = 3;
+    private final long BACKOFF_TIME_UNIT = 1000; //ms
+
 
     // if returnedField contains property matching from excludes than query result will NOT include that property
     private final Set<String> excludes =
@@ -128,7 +127,7 @@ public class SearchClient {
                 .build();
 
         // Execute
-        SearchResponse<Map<String, Object>> searchResponse = client.search(elasticSearchRequest, (Type) Map.class);
+        SearchResponse<Map<String, Object>> searchResponse = searchWithRetry(client, elasticSearchRequest);
 
         // Convert SearchResponse
         List<SearchRecord> results = getSearchRecords(searchResponse);
@@ -156,7 +155,7 @@ public class SearchClient {
                     .build();
 
             // Execute
-            SearchResponse<Map<String, Object>> searchResponse = client.search(elasticSearchRequest, (Type) Map.class);
+            SearchResponse<Map<String, Object>> searchResponse = searchWithRetry(client, elasticSearchRequest);
 
             // Convert SearchResponse
             List<SearchRecord> batch = getSearchRecords(searchResponse);
@@ -177,6 +176,41 @@ public class SearchClient {
         }
 
         return results;
+    }
+
+    private SearchResponse<Map<String, Object>> searchWithRetry(ElasticsearchClient client, SearchRequest elasticSearchRequest) throws IOException, ElasticsearchException {
+        int nTry = 0;
+        while(nTry <= MAX_SEARCH_RETRY) {
+            nTry++;
+            try {
+                return client.search(elasticSearchRequest, (Type) Map.class);
+            } catch (ElasticsearchException e) {
+                int statusCode = e.status();
+                if (nTry <= MAX_SEARCH_RETRY && (statusCode == 408 || statusCode == 429 || statusCode >= 500)) {
+                    doExponentialBackOff(nTry);
+                }
+                else {
+                    throw e;
+                }
+            } catch (IOException e) {
+                if (nTry <= MAX_SEARCH_RETRY) {
+                    doExponentialBackOff(nTry);
+                }
+                else {
+                    throw e;
+                }
+            }
+        }
+        // Won't reach here
+        return new SearchResponse.Builder<Map<String, Object>>().build();
+    }
+
+    private void doExponentialBackOff(int factor) {
+        try {
+            Thread.sleep(((long)Math.pow(2, factor)) * BACKOFF_TIME_UNIT);
+        } catch (InterruptedException e) {
+            //Ignore
+        }
     }
 
     private SearchRequest.Builder createSearchBuilder(Query query, List<SortOptions> sortOptions, List<String> returnedFields, int pageSize) {

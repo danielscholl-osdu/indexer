@@ -16,6 +16,9 @@
 package org.opengroup.osdu.indexer.util;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
+import co.elastic.clients.elasticsearch._types.ErrorResponse;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -34,6 +37,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
 import org.opengroup.osdu.indexer.model.SearchRecord;
+
 import java.lang.reflect.Type;
 import java.util.*;
 import static org.junit.Assert.*;
@@ -106,6 +110,104 @@ public class SearchClientTest {
         assertEquals(searchRequest.source().filter().includes().size(), 0);
         assertEquals(records.size(), 1);
     }
+
+    @Test
+    public void search_with_normalQuery_and_retry_whenSearchHitsIsNotEmpty() throws Exception {
+        List<Hit<Map<String, Object>>> hits = new ArrayList<>();
+        hits.add(searchHit);
+        Map<String, Object> hitFields = new HashMap<>();
+
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        doReturn(searchHits).when(searchResponse).hits();
+        doReturn(hits).when(searchHits).hits();
+        doReturn(hitFields).when(searchHit).source();
+
+        List<ErrorResponse> errorResponses = new ArrayList<>();
+        errorResponses.add(ErrorResponse.of(es -> es.status(408).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Request Timeout"))))));
+        errorResponses.add(ErrorResponse.of(es -> es.status(429).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Too Many Requests"))))));
+        errorResponses.add(ErrorResponse.of(es -> es.status(500).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Internal Server Error"))))));
+        when(client.search(any(SearchRequest.class), eq((Type)Map.class))).thenAnswer(invocationOnMock -> {
+            if(!errorResponses.isEmpty()) {
+                ErrorResponse errorResponse = errorResponses.remove(0);
+                throw new ElasticsearchException("bala", errorResponse);
+            }
+            else {
+                return searchResponse;
+            }
+        });
+
+        // act
+        long startTime = System.currentTimeMillis();
+        List<SearchRecord> records = sut.search(kind, query, null, null, -1);
+        long seconds = (System.currentTimeMillis() - startTime)/1000;
+
+        // assert
+        ArgumentCaptor<SearchRequest> searchRequestArgumentCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(client, times(4)).search(searchRequestArgumentCaptor.capture(), eq((Type)Map.class));
+        verify(client, times(0)).openPointInTime(any(OpenPointInTimeRequest.class));
+        SearchRequest searchRequest = searchRequestArgumentCaptor.getValue();
+        assertNull(searchRequest.pit());
+        assertEquals(searchRequest.sort().size(), 0);
+        assertEquals(searchRequest.source().filter().includes().size(), 0);
+        assertEquals(records.size(), 1);
+        assertEquals(seconds, 14);
+    }
+
+    @Test
+    public void search_with_normalQuery_and_retry_when_too_many_exceptions() throws Exception {
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        List<ErrorResponse> errorResponses = new ArrayList<>();
+        errorResponses.add(ErrorResponse.of(es -> es.status(408).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Request Timeout"))))));
+        errorResponses.add(ErrorResponse.of(es -> es.status(429).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Too Many Requests"))))));
+        errorResponses.add(ErrorResponse.of(es -> es.status(500).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Internal Server Error"))))));
+        errorResponses.add(ErrorResponse.of(es -> es.status(500).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Internal Server Error"))))));
+        when(client.search(any(SearchRequest.class), eq((Type)Map.class))).thenAnswer(invocationOnMock -> {
+            if(!errorResponses.isEmpty()) {
+                ErrorResponse errorResponse = errorResponses.remove(0);
+                throw new ElasticsearchException("bala", errorResponse);
+            }
+            else {
+                return searchResponse;
+            }
+        });
+
+        // act
+        long startTime = System.currentTimeMillis();
+        Assert.assertThrows(Exception.class, () -> sut.search(kind, query, null, null, -1));
+        long seconds = (System.currentTimeMillis() - startTime)/1000;
+
+        // assert
+        verify(client, times(4)).search(any(SearchRequest.class), eq((Type)Map.class));
+        verify(client, times(0)).openPointInTime(any(OpenPointInTimeRequest.class));
+        assertEquals(seconds, 14);
+    }
+
+    @Test
+    public void search_with_normalQuery_and_without_retry_when_bad_request_exception() throws Exception {
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        List<ErrorResponse> errorResponses = new ArrayList<>();
+        errorResponses.add(ErrorResponse.of(es -> es.status(400).error(ErrorCause.of(ec -> ec.causedBy(by -> by.type("Exception").reason("Request Timeout"))))));
+        when(client.search(any(SearchRequest.class), eq((Type)Map.class))).thenAnswer(invocationOnMock -> {
+            if(!errorResponses.isEmpty()) {
+                ErrorResponse errorResponse = errorResponses.remove(0);
+                throw new ElasticsearchException("bala", errorResponse);
+            }
+            else {
+                return searchResponse;
+            }
+        });
+
+        // act
+        long startTime = System.currentTimeMillis();
+        Assert.assertThrows(Exception.class, () -> sut.search(kind, query, null, null, -1));
+        long seconds = (System.currentTimeMillis() - startTime)/1000;
+
+        // assert
+        verify(client, times(1)).search(any(SearchRequest.class), eq((Type)Map.class));
+        verify(client, times(0)).openPointInTime(any(OpenPointInTimeRequest.class));
+        assertEquals(seconds, 0);
+    }
+
 
     @Test
     public void search_with_whenSortOptionsAndReturnedFieldsAreNotEmpty() throws Exception {
