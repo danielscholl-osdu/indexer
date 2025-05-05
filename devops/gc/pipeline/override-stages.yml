@@ -17,9 +17,10 @@ gc-dev2-test:
 download_gc_plugins:
   image: maven:3.8.3-openjdk-17-slim
   stage: build
+  tags: ["osdu-small"]
   variables:
     GC_OQM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1477/packages/maven"
-    GC_OQM_VERSION: "0.27.2"
+    GC_OQM_VERSION: "0.28.0"
     GC_APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1480/packages/maven"
     GC_APD_VERSION: "0.27.2"
   artifacts:
