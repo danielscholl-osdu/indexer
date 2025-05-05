@@ -40,6 +40,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
 import org.opengroup.osdu.indexer.model.IndexAliasesResult;
 import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -52,12 +53,14 @@ public class IndexAliasServiceImpl implements IndexAliasService{
     private ElasticClientHandler elasticClientHandler;
     @Inject
     private JaxRsDpsLog jaxRsDpsLog;
+    @Inject
+    private RequestScopedElasticsearchClient requestScopedClient;
 
     @Override
     public IndexAliasesResult createIndexAliasesForAll() {
         IndexAliasesResult result = new IndexAliasesResult();
         try{
-            ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+            ElasticsearchClient restClient = this.requestScopedClient.getClient();
             List<String> allKinds = getAllKinds(restClient);
             Set<String> allExistingAliases = getAllExistingAliases(restClient);
             for (String kind : allKinds) {

@@ -18,6 +18,7 @@ package org.opengroup.osdu.indexer.aws.service;
 
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.opengroup.osdu.indexer.util.ElasticClientHandler;
@@ -30,6 +31,7 @@ import lombok.extern.java.Log;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -42,6 +44,7 @@ public class ElasticClientHandlerAws extends ElasticClientHandler {
 
     private static final int REST_CLIENT_CONNECT_TIMEOUT = 60000;
     private static final int REST_CLIENT_SOCKET_TIMEOUT = 60000;
+    private static final int REST_CLIENT_CONNECTION_TTL_SECONDS = 60;
 
     @Value("${aws.es.certificate.disableTrust:false}")
     // @Value("#{new Boolean('${aws.es.certificate.disableTrust:false}')}")
@@ -59,22 +62,6 @@ public class ElasticClientHandlerAws extends ElasticClientHandler {
                 .setConnectTimeout(REST_CLIENT_CONNECT_TIMEOUT)
                 .setSocketTimeout(REST_CLIENT_SOCKET_TIMEOUT));        
 
-        if(isLocalHost(host) || disableSslCertificateTrust.booleanValue()) {            
-
-            SSLContext sslContext;            
-            try {
-                sslContext = SSLContext.getInstance("TLS");
-                sslContext.init(null, new TrustManager[]{ UnsafeX509ExtendedTrustManager.INSTANCE }, null);
-                builder.setHttpClientConfigCallback(httpClientBuilder -> 
-                httpClientBuilder.setSSLContext(sslContext)
-                                .setSSLHostnameVerifier((s, session) -> true));
-            } catch (NoSuchAlgorithmException e) {
-                log.severe(e.getMessage());
-            } catch (KeyManagementException e) {
-                log.severe(e.getMessage());
-            }
-
-        }
         Header[] defaultHeaders = new Header[]{
                 new BasicHeader("client.transport.nodes_sampler_interval", "30s"),
                 new BasicHeader("client.transport.ping_timeout", "30s"),
@@ -84,6 +71,28 @@ public class ElasticClientHandlerAws extends ElasticClientHandler {
                 new BasicHeader("xpack.security.transport.ssl.enabled", tls),
                 new BasicHeader("Authorization", basicAuthenticationHeaderVal),
         };
+
+
+    builder.setHttpClientConfigCallback(httpClientBuilder -> {
+        httpClientBuilder.setMaxConnTotal(getMaxConnTotal())
+            .setMaxConnPerRoute(getMaxConnPerRoute())
+            .setConnectionTimeToLive(REST_CLIENT_CONNECTION_TTL_SECONDS, TimeUnit.SECONDS);
+            
+        if ((isLocalHost(host) || disableSslCertificateTrust.booleanValue())) {
+            SSLContext sslContext;            
+            try {
+                sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(null, new TrustManager[]{ UnsafeX509ExtendedTrustManager.INSTANCE }, null);
+                httpClientBuilder
+                    .setSSLContext(sslContext)
+                    .setSSLHostnameVerifier((s, session) -> true);
+            } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                log.severe(e.getMessage());
+            }
+        }
+        
+        return httpClientBuilder;
+    });
         builder.setDefaultHeaders(defaultHeaders);
         return builder;
     }

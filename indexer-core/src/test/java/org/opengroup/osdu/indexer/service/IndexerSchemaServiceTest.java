@@ -74,7 +74,7 @@ import org.opengroup.osdu.indexer.model.indexproperty.AugmenterConfiguration;
 import org.opengroup.osdu.indexer.schema.converter.exeption.SchemaProcessingException;
 import org.opengroup.osdu.indexer.service.exception.ElasticsearchMappingException;
 import org.opengroup.osdu.indexer.util.AugmenterSetting;
-import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -86,8 +86,6 @@ public class IndexerSchemaServiceTest {
 
     @Mock
     private JaxRsDpsLog log;
-    @Mock
-    private ElasticClientHandler elasticClientHandler;
     @Mock
     private ElasticIndexNameResolver elasticIndexNameResolver;
     @Mock
@@ -106,6 +104,8 @@ public class IndexerSchemaServiceTest {
     private AugmenterConfigurationService augmenterConfigurationService;
     @Mock
     private AugmenterSetting augmenterSetting;
+    @Mock
+    private RequestScopedElasticsearchClient requestScopedClient;
     @InjectMocks
     private IndexSchemaServiceImpl sut;
 
@@ -113,7 +113,7 @@ public class IndexerSchemaServiceTest {
     public void setup() {
         initMocks(this);
         ElasticsearchClient restHighLevelClient = mock(ElasticsearchClient.class);
-        when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
+        when(requestScopedClient.getClient()).thenReturn(restHighLevelClient);
         when(augmenterSetting.isEnabled()).thenReturn(true);
     }
 

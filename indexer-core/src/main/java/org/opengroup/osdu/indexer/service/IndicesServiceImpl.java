@@ -52,7 +52,7 @@ import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
 import org.opengroup.osdu.core.common.search.Preconditions;
 import org.opengroup.osdu.indexer.cache.partitionsafe.IndexCache;
 import org.opengroup.osdu.indexer.util.CustomIndexAnalyzerSetting;
-import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.opengroup.osdu.indexer.util.TypeMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,7 +82,7 @@ public class IndicesServiceImpl implements IndicesService {
     private static final Time REQUEST_TIMEOUT = Time.of(builder -> builder.time("1m"));
 
     @Autowired
-    private ElasticClientHandler elasticClientHandler;
+    private RequestScopedElasticsearchClient requestScopedClient;
     @Autowired
     private ElasticIndexNameResolver elasticIndexNameResolver;
     @Autowired
@@ -186,6 +186,7 @@ public class IndicesServiceImpl implements IndicesService {
      * @return index details if index already exists
      * @throws IOException if request cannot be processed
      */
+
     public boolean isIndexReady(ElasticsearchClient client, String index) throws IOException {
         try {
             if (this.indexExistInCache(index)) {
@@ -310,7 +311,7 @@ public class IndicesServiceImpl implements IndicesService {
      * @param index Index name
      */
     public boolean deleteIndex(String index) throws ElasticsearchException, IOException, AppException {
-        ElasticsearchClient client = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient client = requestScopedClient.getClient();
         return deleteIndex(client, index);
     }
 

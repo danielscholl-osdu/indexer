@@ -32,13 +32,13 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ClusterConfigurationServiceTest {
 
     @Mock
-    private ElasticClientHandler elasticClientHandler;
+    private RequestScopedElasticsearchClient requestScopedClient;
     @InjectMocks
     private ClusterConfigurationServiceImpl sut;
 
@@ -55,7 +55,7 @@ public class ClusterConfigurationServiceTest {
     @Test
     public void should_updateClusterConfiguration() throws IOException {
         PutClusterSettingsResponse clusterUpdateSettingsResponse = mock(PutClusterSettingsResponse.class);
-        when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
+        when(requestScopedClient.getClient()).thenReturn(restHighLevelClient);
         when(clusterUpdateSettingsResponse.acknowledged()).thenReturn(true);
         doReturn(clusterClient).when(restHighLevelClient).cluster();
         doReturn(clusterUpdateSettingsResponse).when(clusterClient).putSettings(any(PutClusterSettingsRequest.class));
