@@ -47,7 +47,7 @@ import org.opengroup.osdu.core.common.model.search.IndexInfo;
 import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
 import org.opengroup.osdu.indexer.cache.partitionsafe.IndexCache;
 import org.opengroup.osdu.indexer.util.CustomIndexAnalyzerSetting;
-import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -67,7 +67,7 @@ import static org.opengroup.osdu.indexer.testutils.ReflectionTestUtil.setFieldVa
 @RunWith(SpringRunner.class)
 public class IndicesServiceTest {
     @Mock
-    private ElasticClientHandler elasticClientHandler;
+    private RequestScopedElasticsearchClient requestScopedClient;
     @Mock
     private ElasticIndexNameResolver elasticIndexNameResolver;
     @Mock
@@ -100,6 +100,7 @@ public class IndicesServiceTest {
         indicesClient = mock(ElasticsearchIndicesClient.class);
         restHighLevelClient = mock(ElasticsearchClient.class);
         restClientTransport = mock(RestClientTransport.class);
+        when(requestScopedClient.getClient()).thenReturn(restHighLevelClient);
         setFieldValueForClass(sut, "healthRetryThreshold", 1);
         setFieldValueForClass(sut, "healthRetrySleepPeriodInMilliseconds", 1);
     }
@@ -260,7 +261,6 @@ public class IndicesServiceTest {
         GetIndexResponse getIndexResponse = mock(GetIndexResponse.class);
         Map<String, IndexState> indices = Map.of("anyIndex", IndexState.of(builder -> builder));
 
-        when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
         doReturn(indicesClient).when(restHighLevelClient).indices();
         doReturn(deleteIndexResponse).when(indicesClient).delete(any(DeleteIndexRequest.class));
         doReturn(getIndexResponse).when(indicesClient).get(any(GetIndexRequest.class));
@@ -275,7 +275,6 @@ public class IndicesServiceTest {
         GetIndexResponse getIndexResponse = mock(GetIndexResponse.class);
         Map<String, IndexState> indices = Map.of("anyIndex", IndexState.of(builder -> builder));
 
-        when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
         doReturn(indicesClient).when(restHighLevelClient).indices();
         doReturn(deleteIndexResponse).when(indicesClient).delete(any(DeleteIndexRequest.class));
         doReturn(getIndexResponse).when(indicesClient).get(any(GetIndexRequest.class));
@@ -290,7 +289,6 @@ public class IndicesServiceTest {
         GetIndexResponse getIndexResponse = mock(GetIndexResponse.class);
         Map<String, IndexState> indices = Map.of("anyIndex", IndexState.of(builder -> builder));
 
-        when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
         doReturn(indicesClient).when(restHighLevelClient).indices();
         doReturn(deleteIndexResponse).when(indicesClient).delete(any(DeleteIndexRequest.class));
         doReturn(getIndexResponse).when(indicesClient).get(any(GetIndexRequest.class));
@@ -321,7 +319,6 @@ public class IndicesServiceTest {
         GetIndexResponse getIndexResponse = mock(GetIndexResponse.class);
         Map<String, IndexState> indices = Map.of("anyIndex", IndexState.of(builder -> builder));
 
-        when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
         doReturn(indicesClient).when(restHighLevelClient).indices();
         doThrow(exception).when(indicesClient).delete(any(DeleteIndexRequest.class));
         doReturn(getIndexResponse).when(indicesClient).get(any(GetIndexRequest.class));
@@ -348,7 +345,6 @@ public class IndicesServiceTest {
         );
 
         ElasticsearchException exception = new ElasticsearchException(null, errorResponse);
-        when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
         doReturn(indicesClient).when(restHighLevelClient).indices();
         doThrow(exception).when(indicesClient).get(any(GetIndexRequest.class));
 
@@ -452,7 +448,7 @@ public class IndicesServiceTest {
     public void should_getIndexReadyStatus_whenIndexInCache() throws IOException {
         when(this.indicesExistCache.get("anyIndex")).thenReturn(true);
 
-        boolean result = this.sut.isIndexReady(any(ElasticsearchClient.class), "anyIndex");
+        boolean result = this.sut.isIndexReady(mock(ElasticsearchClient.class), "anyIndex");
 
         assertTrue(result);
     }

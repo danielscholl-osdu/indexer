@@ -48,7 +48,7 @@ public class SearchClientTest {
     SearchClient sut;
 
     @Mock
-    private ElasticClientHandler elasticClientHandler;
+    private RequestScopedElasticsearchClient requestScopedClient;
 
     @Mock
     private ElasticIndexNameResolver elasticIndexNameResolver;
@@ -74,7 +74,7 @@ public class SearchClientTest {
 
     @Before
     public void init() {
-        doReturn(client).when(elasticClientHandler).getOrCreateRestClient();
+        doReturn(client).when(requestScopedClient).getClient();
         when(elasticIndexNameResolver.getIndexNameFromKind(anyString())).thenAnswer(invocation -> {
             String kind = invocation.getArgument(0);
             return kind.replace(":", "-").toLowerCase();

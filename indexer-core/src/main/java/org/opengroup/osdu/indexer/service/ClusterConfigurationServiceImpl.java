@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Map;
 import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,9 @@ public class ClusterConfigurationServiceImpl implements IClusterConfigurationSer
 
     @Autowired
     private ElasticClientHandler elasticClientHandler;
+    
+    @Autowired
+    private RequestScopedElasticsearchClient requestScopedClient;
 
     @Override
     public boolean updateClusterConfiguration() throws IOException {
@@ -39,7 +43,7 @@ public class ClusterConfigurationServiceImpl implements IClusterConfigurationSer
             .timeout(Time.of(builder -> builder.time("1m")))
             .build();
 
-        ElasticsearchClient client = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient client = this.requestScopedClient.getClient();
         PutClusterSettingsResponse response = client.cluster().putSettings(request);
         return response.acknowledged();
         }

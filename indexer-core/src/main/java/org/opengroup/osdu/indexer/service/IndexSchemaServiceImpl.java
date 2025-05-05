@@ -47,6 +47,7 @@ import org.opengroup.osdu.indexer.schema.converter.exeption.SchemaProcessingExce
 import org.opengroup.osdu.indexer.service.exception.ElasticsearchMappingException;
 import org.opengroup.osdu.indexer.util.AugmenterSetting;
 import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.opengroup.osdu.indexer.util.TypeMapper;
 import org.springframework.stereotype.Service;
 
@@ -77,9 +78,11 @@ public class IndexSchemaServiceImpl implements IndexSchemaService {
     private AugmenterConfigurationService augmenterConfigurationService;
     @Inject
     private AugmenterSetting augmenterSetting;
+    @Inject
+    private RequestScopedElasticsearchClient requestScopedClient;
 
     public void processSchemaMessages(Map<String, OperationType> schemaMsgs) throws IOException {
-        ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient restClient = this.requestScopedClient.getClient();
         schemaMsgs.entrySet().forEach(msg -> {
             try {
                 processSchemaEvents(restClient, msg);
@@ -111,7 +114,7 @@ public class IndexSchemaServiceImpl implements IndexSchemaService {
     @Override
     public void processSchemaUpsert(String kind) throws AppException {
         try {
-            ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+            ElasticsearchClient restClient = this.requestScopedClient.getClient();
             processSchemaUpsertEvent(restClient, kind);
         } catch (IOException | ElasticsearchException | URISyntaxException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "unable to process schema update", e.getMessage());
@@ -280,7 +283,7 @@ public class IndexSchemaServiceImpl implements IndexSchemaService {
 
     public void syncIndexMappingWithStorageSchema(String kind) throws ElasticsearchException, IOException, AppException, URISyntaxException {
         String index = this.elasticIndexNameResolver.getIndexNameFromKind(kind);
-        ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient restClient = requestScopedClient.getClient();
         if (this.indicesService.isIndexExist(restClient, index)) {
                 this.indicesService.deleteIndex(restClient, index);
                 this.log.info(String.format("deleted index: %s", index));
@@ -292,7 +295,7 @@ public class IndexSchemaServiceImpl implements IndexSchemaService {
 
     public boolean isStorageSchemaSyncRequired(String kind, boolean forceClean) throws IOException {
         String index = this.elasticIndexNameResolver.getIndexNameFromKind(kind);
-        ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient restClient = requestScopedClient.getClient();
         boolean indexExist = this.indicesService.isIndexExist(restClient, index);
         return !indexExist || forceClean;
     }

@@ -50,18 +50,17 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
 import org.opengroup.osdu.indexer.model.IndexAliasesResult;
-import org.opengroup.osdu.indexer.util.ElasticClientHandler;
 import org.springframework.context.annotation.Lazy;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IndexAliasServiceImplTest {
     @Mock
-    private ElasticClientHandler elasticClientHandler;
-    @Mock
     private ElasticIndexNameResolver elasticIndexNameResolver;
     @Mock
     @Lazy
     private JaxRsDpsLog log;
+    @Mock
+    private org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient requestScopedClient;
     @InjectMocks
     private IndexAliasServiceImpl sut;
 
@@ -185,7 +184,7 @@ public class IndexAliasServiceImplTest {
                 String argument = invocation.getArgument(0);
                 return !unsupportedKind.equals(argument);
             });
-        when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
+        when(requestScopedClient.getClient()).thenReturn(restHighLevelClient);
         when(restHighLevelClient.indices()).thenReturn(indicesClient);
         when(restHighLevelClient.search(any(SearchRequest.class), any(Class.class))).thenReturn(searchResponse);
         when(searchResponse.aggregations()).thenReturn(Map.of("kinds", aggregate));
