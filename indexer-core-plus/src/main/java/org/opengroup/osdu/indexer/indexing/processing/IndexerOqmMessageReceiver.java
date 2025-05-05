@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opengroup.osdu.auth.TokenProvider;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.indexer.schema.converter.exeption.SchemaProcessingException;
 import org.opengroup.osdu.oqm.core.model.OqmAckReplier;
 import org.opengroup.osdu.oqm.core.model.OqmMessage;
 import org.opengroup.osdu.oqm.core.model.OqmMessageReceiver;
@@ -31,7 +32,6 @@ import org.opengroup.osdu.indexer.indexing.thread.ThreadScopeContextHolder;
 
 import jakarta.validation.constraints.NotNull;
 import java.util.Optional;
-import org.opengroup.osdu.indexer.schema.converter.exeption.SchemaProcessingException;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -52,7 +52,7 @@ public abstract class IndexerOqmMessageReceiver implements OqmMessageReceiver {
         log.info("OQM message: {} - {} - {}", oqmMessage.getId(), oqmMessage.getData(), oqmMessage.getAttributes());
         if (!validInput(oqmMessage)) {
             log.error("Not valid event payload, event will not be processed.");
-            oqmAckReplier.ack();
+            oqmAckReplier.nack(false);
             return;
         }
 
@@ -101,7 +101,7 @@ public abstract class IndexerOqmMessageReceiver implements OqmMessageReceiver {
         log.info(
             "Event ID: " + oqmMessage.getId() + ". Correlation ID: " + dpsHeaders.getCorrelationId()
                 + ", was not processed, and will NOT be rescheduled.", appException);
-        oqmAckReplier.ack();
+        oqmAckReplier.nack(false);
     }
 
     private static void rescheduleMessage(OqmMessage oqmMessage, DpsHeaders dpsHeaders,
@@ -109,7 +109,7 @@ public abstract class IndexerOqmMessageReceiver implements OqmMessageReceiver {
         log.error(
             "Event id : " + oqmMessage.getId() + ". Correlation ID: " + dpsHeaders.getCorrelationId()
                 + ", was not processed, and will BE rescheduled.", exception);
-        oqmAckReplier.nack();
+        oqmAckReplier.nack(true);
     }
 
     /**
