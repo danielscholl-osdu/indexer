@@ -187,6 +187,7 @@ public class SearchClient {
             } catch (ElasticsearchException e) {
                 int statusCode = e.status();
                 if (nTry <= MAX_SEARCH_RETRY && (statusCode == 408 || statusCode == 429 || statusCode >= 500)) {
+                    logger.debug(String.format("Retry search %d times with status code %d", nTry, statusCode));
                     doExponentialBackOff(nTry);
                 }
                 else {
@@ -194,6 +195,7 @@ public class SearchClient {
                 }
             } catch (IOException e) {
                 if (nTry <= MAX_SEARCH_RETRY) {
+                    logger.debug(String.format("Retry search %d times because of IOException", nTry));
                     doExponentialBackOff(nTry);
                 }
                 else {
