@@ -55,6 +55,9 @@ public class SearchClient {
 
     @Inject
     private JaxRsDpsLog logger;
+    
+    @Inject
+    private RequestScopedElasticsearchClient requestScopedClient;
 
     private final static int MAX_PAGE_SIZE = 5000; //5k
     private final static int MAX_RECORDS_COUNT = Integer.MAX_VALUE;
@@ -89,7 +92,7 @@ public class SearchClient {
             throw new Exception("query can't be null");
         }
 
-        ElasticsearchClient client = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient client = this.requestScopedClient.getClient();
         String index = this.getIndex(kinds);
         limit = (limit <= 0)? MAX_RECORDS_COUNT : limit;
         int pageSize = (limit > MAX_PAGE_SIZE)? MAX_PAGE_SIZE: limit;

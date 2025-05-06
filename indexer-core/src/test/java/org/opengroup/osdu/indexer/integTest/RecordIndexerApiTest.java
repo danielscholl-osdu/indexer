@@ -204,7 +204,7 @@ public class RecordIndexerApiTest {
     // through the logic we will ask for a real schema to check if we need to add new fields into index
     when(schemaCache.get(kind)).thenReturn(getJsonAsStringFromJsonFile(schemaAsJsonFile));
     when(elasticClientHandler.createRestClient(any())).thenReturn(restHighLevelClient);
-    when(elasticClientHandler.getOrCreateRestClient()).thenReturn(restHighLevelClient);
+    when(elasticClientHandler.createRestClientFromClusterInfo()).thenReturn(restHighLevelClient);
     when(restHighLevelClient.indices()).thenReturn(indicesClient);
     when(indicesService.isIndexReady(any(), eq(""))).thenReturn(true);
     when(indicesService.createIndex(any(), any(), any(), any())).thenReturn(true);

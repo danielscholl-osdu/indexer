@@ -69,8 +69,8 @@ import org.opengroup.osdu.indexer.model.indexproperty.AugmenterConfiguration;
 import org.opengroup.osdu.indexer.provider.interfaces.IPublisher;
 import org.opengroup.osdu.indexer.service.exception.ElasticsearchMappingException;
 import org.opengroup.osdu.indexer.util.AugmenterSetting;
-import org.opengroup.osdu.indexer.util.ElasticClientHandler;
 import org.opengroup.osdu.indexer.util.IndexerQueueTaskBuilder;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -114,8 +114,8 @@ public class IndexerServiceImpl implements IndexerService {
     private IMappingService mappingService;
     @Inject
     private IPublisher progressPublisher;
-    @Inject
-    private ElasticClientHandler elasticClientHandler;
+    @Autowired
+    private RequestScopedElasticsearchClient requestScopedClient;
     @Inject
     private IndexerQueueTaskBuilder indexerQueueTaskBuilder;
     @Inject
@@ -241,7 +241,7 @@ public class IndexerServiceImpl implements IndexerService {
     public void processSchemaMessages(List<RecordInfo> recordInfos) throws IOException {
         Map<String, OperationType> schemaMsgs = RecordInfo.getSchemaMsgs(recordInfos);
         if (!schemaMsgs.isEmpty()) {
-            ElasticsearchClient restClient = elasticClientHandler.getOrCreateRestClient();
+            final ElasticsearchClient restClient = requestScopedClient.getClient();
             schemaMsgs.entrySet().forEach(msg -> {
                 try {
                     processSchemaEvents(restClient, msg);
@@ -250,7 +250,6 @@ public class IndexerServiceImpl implements IndexerService {
                         "unable to process schema delete", e.getMessage());
                 }
             });
-
         }
     }
 
@@ -286,7 +285,7 @@ public class IndexerServiceImpl implements IndexerService {
         List<String> relatedKinds = augmenterConfigurationService.getRelatedKindsOfConfigurations(configurationIds);
         if(!relatedKinds.isEmpty()) {
             try{
-                ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+                ElasticsearchClient restClient = requestScopedClient.getClient();
                 for (String kind : relatedKinds) {
                     try {
                         this.schemaService.processSchemaUpsertEvent(restClient, kind);
@@ -558,7 +557,8 @@ public class IndexerServiceImpl implements IndexerService {
             return new LinkedList<>();
         }
 
-        ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient restClient = requestScopedClient.getClient();
+        
         // process the schema
         this.cacheOrCreateElasticMapping(recordIndexerPayload, restClient);
 
@@ -570,7 +570,6 @@ public class IndexerServiceImpl implements IndexerService {
         processRetryUpsertRecords(restClient, records, bulkRequestResult, failedRecordIds);
 
         return failedRecordIds;
-
     }
 
     private void processRetryUpsertRecords(ElasticsearchClient restClient, List<Record> records,
@@ -670,7 +669,7 @@ public class IndexerServiceImpl implements IndexerService {
             }
         }
 
-        ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient restClient = requestScopedClient.getClient();
         return processBulkRequest(restClient, bulkRequestBuilder.build()).getFailureRecordIds();
     }
 

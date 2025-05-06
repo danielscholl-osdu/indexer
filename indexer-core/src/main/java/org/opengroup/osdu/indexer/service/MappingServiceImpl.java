@@ -30,6 +30,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
 import org.opengroup.osdu.core.common.search.Preconditions;
 import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.annotation.RequestScope;
@@ -46,6 +47,8 @@ public abstract class MappingServiceImpl implements IMappingService {
     private ElasticClientHandler elasticClientHandler;
     @Autowired
     private ElasticIndexNameResolver elasticIndexNameResolver;
+    @Autowired
+    private RequestScopedElasticsearchClient requestScopedClient;
 
     static {
         // default is 10k chars, which makes big mapping responses truncated
@@ -60,7 +63,7 @@ public abstract class MappingServiceImpl implements IMappingService {
      * */
     @Override
     public String getIndexSchema(String index) throws Exception {
-        ElasticsearchClient client = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient client = this.requestScopedClient.getClient();
         return this.getIndexMapping(client, index);
     }
 

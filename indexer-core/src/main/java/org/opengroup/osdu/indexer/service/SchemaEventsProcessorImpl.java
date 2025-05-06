@@ -34,6 +34,7 @@ import org.opengroup.osdu.core.common.model.indexer.SchemaOperationType;
 import org.opengroup.osdu.indexer.config.SchemaEventsListenerConfiguration;
 import org.opengroup.osdu.indexer.logging.AuditLogger;
 import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -47,6 +48,8 @@ public class SchemaEventsProcessorImpl implements SchemaEventsProcessor {
     private IndexSchemaService indexSchemaService;
     @Inject
     private AuditLogger auditLogger;
+    @Inject
+    private RequestScopedElasticsearchClient requestScopedClient;
 
     @Override
     public void processSchemaMessages(List<SchemaInfo> schemaInfos) throws IOException {
@@ -70,7 +73,7 @@ public class SchemaEventsProcessorImpl implements SchemaEventsProcessor {
             return;
         }
 
-        ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+        ElasticsearchClient restClient = this.requestScopedClient.getClient();
         messages.forEach((key, value) -> {
             try {
                 this.indexSchemaService.processSchemaUpsertEvent(restClient, key);

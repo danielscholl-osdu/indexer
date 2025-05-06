@@ -21,13 +21,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -61,11 +55,7 @@ import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.indexer.IndexSchema;
-import org.opengroup.osdu.core.common.model.indexer.IndexingStatus;
-import org.opengroup.osdu.core.common.model.indexer.JobStatus;
-import org.opengroup.osdu.core.common.model.indexer.RecordInfo;
-import org.opengroup.osdu.core.common.model.indexer.Records;
+import org.opengroup.osdu.core.common.model.indexer.*;
 import org.opengroup.osdu.core.common.model.search.RecordChangedMessages;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.provider.interfaces.IRequestInfo;
@@ -76,8 +66,8 @@ import org.opengroup.osdu.indexer.model.indexproperty.AugmenterConfiguration;
 import org.opengroup.osdu.indexer.provider.interfaces.IPublisher;
 import org.opengroup.osdu.indexer.service.exception.ElasticsearchMappingException;
 import org.opengroup.osdu.indexer.util.AugmenterSetting;
-import org.opengroup.osdu.indexer.util.ElasticClientHandler;
 import org.opengroup.osdu.indexer.util.IndexerQueueTaskBuilder;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IndexerServiceImplTest {
@@ -86,8 +76,6 @@ public class IndexerServiceImplTest {
 
     @InjectMocks
     private IndexerServiceImpl sut;
-    @Mock
-    private ElasticClientHandler elasticClientHandler;
     @Mock
     private ElasticIndexNameResolver elasticIndexNameResolver;
     @Mock
@@ -124,6 +112,8 @@ public class IndexerServiceImplTest {
     private IFeatureFlag asIngestedCoordinatesFeatureFlag;
     @Mock
     private XcollaborationHolder xcollaborationHolder;
+    @Mock
+    private RequestScopedElasticsearchClient requestScopedClient;
 
     private List<RecordInfo> recordInfos = new ArrayList<>();
 
@@ -133,10 +123,10 @@ public class IndexerServiceImplTest {
             " {\"id\":\"opendes:doc:test4\",\"kind\":\"osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0\",\"op\":\"create\"}]";
 
     private final String pubsubMsgPartiallySuccess = "[{\"id\":\"opendes:doc:test1\",\"kind\":\"opendes:testindexer1:well:1.0.0\",\"op\":\"update\"}," +
-        "{\"id\":\"opendes:doc:test2\",\"kind\":\"opendes:testindexer2:well:1.0.0\",\"op\":\"create\"}," +
-        "{\"id\":\"opendes:doc:test3\",\"kind\":\"opendes:testindexer2:well:1.0.0\",\"op\":\"create\"}," +
-        "{\"id\":\"opendes:doc:test4\",\"kind\":\"osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0\",\"op\":\"create\"}," +
-        "{\"id\":\"opendes:doc:test5\",\"kind\":\"opendes:testindexer4:well:1.0.0\",\"op\":\"create\"}]";
+            "{\"id\":\"opendes:doc:test2\",\"kind\":\"opendes:testindexer2:well:1.0.0\",\"op\":\"create\"}," +
+            "{\"id\":\"opendes:doc:test3\",\"kind\":\"opendes:testindexer2:well:1.0.0\",\"op\":\"create\"}," +
+            "{\"id\":\"opendes:doc:test4\",\"kind\":\"osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0\",\"op\":\"create\"}," +
+            "{\"id\":\"opendes:doc:test5\",\"kind\":\"opendes:testindexer4:well:1.0.0\",\"op\":\"create\"}]";
     private final String pubsubMsgForDeletion = "[{\"id\":\"opendes:doc:test1\",\"kind\":\"opendes:testindexer1:well:1.0.0\",\"op\":\"delete\"}," +
             "{\"id\":\"opendes:doc:test2\",\"kind\":\"opendes:testindexer2:well:1.0.0\",\"op\":\"delete\"}, " +
             "{\"id\":\"opendes:doc:test3\",\"kind\":\"opendes:testindexer2:well:1.0.0\",\"op\":\"delete\"}," +
@@ -162,6 +152,7 @@ public class IndexerServiceImplTest {
         jobStatus = spy(new JobStatus());
         mockedAcls = mockStatic(Acl.class);
         initMocks(this);
+        when(requestScopedClient.getClient()).thenReturn(restHighLevelClient);
         when(augmenterSetting.isEnabled()).thenReturn(true);
         when(xcollaborationHolder.isFeatureEnabledAndHeaderExists()).thenReturn(false);
     }
@@ -183,7 +174,7 @@ public class IndexerServiceImplTest {
 
         this.sut.processSchemaMessages(recordInfos);
 
-        verify(this.elasticClientHandler, times(1)).getOrCreateRestClient();
+        verify(this.requestScopedClient, times(1)).getClient();
         verify(this.elasticIndexNameResolver, times(1)).getIndexNameFromKind(any());
         verify(this.indicesService, times(1)).isIndexExist(any(), any());
     }
@@ -227,17 +218,17 @@ public class IndexerServiceImplTest {
 
             verify(restHighLevelClient, times(2)).bulk(any(BulkRequest.class));
             verify(this.auditLogger).indexStarted(Arrays.asList(
-                "id=opendes:doc:test1 kind=opendes:testindexer1:well:1.0.0 operationType=update",
-                "id=opendes:doc:test2 kind=opendes:testindexer2:well:1.0.0 operationType=create",
-                "id=opendes:doc:test3 kind=opendes:testindexer2:well:1.0.0 operationType=create",
-                "id=opendes:doc:test4 kind=osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0 operationType=create",
-                "id=opendes:doc:test5 kind=opendes:testindexer4:well:1.0.0 operationType=create"));
+                    "id=opendes:doc:test1 kind=opendes:testindexer1:well:1.0.0 operationType=update",
+                    "id=opendes:doc:test2 kind=opendes:testindexer2:well:1.0.0 operationType=create",
+                    "id=opendes:doc:test3 kind=opendes:testindexer2:well:1.0.0 operationType=create",
+                    "id=opendes:doc:test4 kind=osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0 operationType=create",
+                    "id=opendes:doc:test5 kind=opendes:testindexer4:well:1.0.0 operationType=create"));
             verify(this.auditLogger).indexCreateRecordSuccess(Arrays.asList(
-                "RecordStatus(id=opendes:doc:test2, kind=opendes:testindexer2:well:1.0.0, operationType=create, status=SUCCESS)",
-                "RecordStatus(id=opendes:doc:test4, kind=osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0, operationType=create, status=SUCCESS)"));
+                    "RecordStatus(id=opendes:doc:test2, kind=opendes:testindexer2:well:1.0.0, operationType=create, status=SUCCESS)",
+                    "RecordStatus(id=opendes:doc:test4, kind=osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0, operationType=create, status=SUCCESS)"));
             verify(this.auditLogger).indexCreateRecordFail(Arrays.asList(
-                "RecordStatus(id=opendes:doc:test3, kind=opendes:testindexer2:well:1.0.0, operationType=create, status=FAIL, message=Elasticsearch exception [type=mapper_parsing_exception, reason=failed to parse field [data.SpatialLocation.Wgs84Coordinates] of type [geo_shape]])",
-                "RecordStatus(id=opendes:doc:test5, kind=opendes:testindexer4:well:1.0.0, operationType=create, status=FAIL, message=Indexed Successfully)"));
+                    "RecordStatus(id=opendes:doc:test3, kind=opendes:testindexer2:well:1.0.0, operationType=create, status=FAIL, message=Elasticsearch exception [type=mapper_parsing_exception, reason=failed to parse field [data.SpatialLocation.Wgs84Coordinates] of type [geo_shape]])",
+                    "RecordStatus(id=opendes:doc:test5, kind=opendes:testindexer4:well:1.0.0, operationType=create, status=FAIL, message=Indexed Successfully)"));
             verify(this.auditLogger).indexUpdateRecordPartialSuccess(singletonList("RecordStatus(id=opendes:doc:test1, kind=opendes:testindexer1:well:1.0.0, operationType=update, status==PARTIAL_SUCCESS, message=Indexed Successfully)"));
         } catch (Exception e) {
             fail("Should not throw this exception" + e.getMessage());
@@ -352,7 +343,8 @@ public class IndexerServiceImplTest {
         this.dpsHeaders.put(DpsHeaders.AUTHORIZATION, "testAuth");
 
         // setup message
-        Type listType = new TypeToken<List<RecordInfo>>() {}.getType();
+        Type listType = new TypeToken<List<RecordInfo>>() {
+        }.getType();
         this.recordInfos = (new Gson()).fromJson(pubsubMsg, listType);
         Map<String, String> messageAttributes = new HashMap<>();
         messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, "opendes");
@@ -379,7 +371,7 @@ public class IndexerServiceImplTest {
         when(this.indicesService.createIndex(any(), any(), any(), any())).thenReturn(true);
         when(this.mappingService.getIndexMappingFromRecordSchema(any())).thenReturn(new HashMap<>());
 
-        when(this.elasticClientHandler.getOrCreateRestClient()).thenReturn(this.restHighLevelClient);
+        when(this.requestScopedClient.getClient()).thenReturn(this.restHighLevelClient);
         when(this.restHighLevelClient.bulk(any(BulkRequest.class))).thenReturn(this.bulkResponse);
 
         Map<String, Object> indexerMappedPayload = new HashMap<>();
@@ -387,10 +379,10 @@ public class IndexerServiceImplTest {
         when(this.storageIndexerPayloadMapper.mapDataPayload(any(), any(), any(), any())).thenReturn(indexerMappedPayload);
 
         List<BulkResponseItem> items = List.of(
-            prepareFailedResponse(recordId1),
-            prepareSuccessfulResponse(recordId2),
-            prepareSuccessfulResponse(recordId4),
-            prepareFailed400Response(recordId3)
+                prepareFailedResponse(recordId1),
+                prepareSuccessfulResponse(recordId2),
+                prepareSuccessfulResponse(recordId4),
+                prepareFailed400Response(recordId3)
         );
         when(this.bulkResponse.items()).thenReturn(items);
     }
@@ -402,7 +394,8 @@ public class IndexerServiceImplTest {
         this.dpsHeaders.put(DpsHeaders.AUTHORIZATION, "testAuth");
 
         // setup message
-        Type listType = new TypeToken<List<RecordInfo>>() {}.getType();
+        Type listType = new TypeToken<List<RecordInfo>>() {
+        }.getType();
         this.recordInfos = (new Gson()).fromJson(pubsubMsg, listType);
         Map<String, String> messageAttributes = new HashMap<>();
         messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, "opendes");
@@ -434,7 +427,7 @@ public class IndexerServiceImplTest {
         when(this.mappingService.getIndexMappingFromRecordSchema(any())).thenReturn(new HashMap<>());
         doThrow(new ElasticsearchMappingException("msg", 400)).when(mappingService).syncMetaAttributeIndexMappingIfRequired(any(), eq(indexSchema4));
 
-        when(this.elasticClientHandler.getOrCreateRestClient()).thenReturn(this.restHighLevelClient);
+        when(this.requestScopedClient.getClient()).thenReturn(this.restHighLevelClient);
         when(this.restHighLevelClient.bulk(any(BulkRequest.class))).thenReturn(this.bulkResponse);
 
         Map<String, Object> indexerMappedPayload = new HashMap<>();
@@ -442,11 +435,11 @@ public class IndexerServiceImplTest {
         when(this.storageIndexerPayloadMapper.mapDataPayload(any(), any(), any(), any())).thenReturn(indexerMappedPayload);
 
         List<BulkResponseItem> items = List.of(
-            prepareSuccessfulResponse(recordId1),
-            prepareSuccessfulResponse(recordId2),
-            prepareSuccessfulResponse(recordId4),
-            prepareSuccessfulResponse(recordId5),
-            prepareFailed400Response(recordId3)
+                prepareSuccessfulResponse(recordId1),
+                prepareSuccessfulResponse(recordId2),
+                prepareSuccessfulResponse(recordId4),
+                prepareSuccessfulResponse(recordId5),
+                prepareFailed400Response(recordId3)
         );
         when(this.bulkResponse.items()).thenReturn(items);
     }

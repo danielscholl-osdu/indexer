@@ -37,7 +37,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.search.IndexInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.IRequestInfo;
 import org.opengroup.osdu.indexer.config.IndexerConfigurationProperties;
-import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -51,7 +51,7 @@ public class CronServiceImplTest {
     @Mock
     private IndicesService indicesService;
     @Mock
-    private ElasticClientHandler elasticClientHandler;
+    private RequestScopedElasticsearchClient requestScopedClient;
     @Mock
     private IRequestInfo requestInfo;
     @Mock
@@ -66,7 +66,7 @@ public class CronServiceImplTest {
     public void setup() {
 
         when(this.requestInfo.getHeaders()).thenReturn(dpsHeaders);
-
+        when(requestScopedClient.getClient()).thenReturn(restHighLevelClient);
         when(configurationProperties.getCronIndexCleanupThresholdDays()).thenReturn(3);
         when(configurationProperties.getCronEmptyIndexCleanupThresholdDays()).thenReturn(7);
     }
@@ -78,7 +78,6 @@ public class CronServiceImplTest {
         IndexInfo info = IndexInfo.builder().name("tenant1-index-1.0.0").documentCount("10").creationDate(Long.toString(Instant.now().minus(4, ChronoUnit.DAYS).toEpochMilli())).build();
 
         when(this.requestInfo.getPartitionId()).thenReturn("tenant1");
-        when(this.elasticClientHandler.getOrCreateRestClient()).thenReturn(this.restHighLevelClient);
         when(this.indicesService.getIndexInfo(this.restHighLevelClient, indexPattern)).thenReturn(Lists.newArrayList(info));
 
         this.sut.cleanupIndices(indexPattern);
@@ -90,7 +89,6 @@ public class CronServiceImplTest {
     @Test(expected = IOException.class)
     public void run_cleanup_when_cron_job_runs_with_wrong_pattern() throws Exception {
         IOException exception = new IOException("blah");
-        when(this.elasticClientHandler.getOrCreateRestClient()).thenReturn(this.restHighLevelClient);
         when(this.indicesService.getIndexInfo(this.restHighLevelClient, "tenant1-test-*")).thenThrow(exception);
 
         this.sut.cleanupIndices("tenant1-test-*");
@@ -103,7 +101,6 @@ public class CronServiceImplTest {
         IndexInfo info = IndexInfo.builder().name("tenant1-index-1.0.0").documentCount("10").creationDate(Long.toString(Instant.now().minus(8, ChronoUnit.DAYS).toEpochMilli())).build();
 
         when(this.requestInfo.getPartitionId()).thenReturn("tenant1");
-        when(this.elasticClientHandler.getOrCreateRestClient()).thenReturn(this.restHighLevelClient);
         when(this.indicesService.getIndexInfo(this.restHighLevelClient, null)).thenReturn(Lists.newArrayList(info));
 
         this.sut.cleanupEmptyStaleIndices();
@@ -117,7 +114,6 @@ public class CronServiceImplTest {
         IndexInfo info = IndexInfo.builder().name("tenant1-index-1.0.0").documentCount("0").creationDate(Long.toString(Instant.now().minus(8, ChronoUnit.DAYS).toEpochMilli())).build();
 
         when(this.requestInfo.getPartitionId()).thenReturn("tenant1");
-        when(this.elasticClientHandler.getOrCreateRestClient()).thenReturn(this.restHighLevelClient);
         when(this.indicesService.getIndexInfo(this.restHighLevelClient, null)).thenReturn(Lists.newArrayList(info));
 
         this.sut.cleanupEmptyStaleIndices();
@@ -129,7 +125,6 @@ public class CronServiceImplTest {
     @Test(expected = IOException.class)
     public void run_cleanup_when_backend_throws_exception() throws Exception {
         IOException exception = new IOException("blah");
-        when(this.elasticClientHandler.getOrCreateRestClient()).thenReturn(this.restHighLevelClient);
         when(this.indicesService.getIndexInfo(this.restHighLevelClient, null)).thenThrow(exception);
 
         this.sut.cleanupEmptyStaleIndices();

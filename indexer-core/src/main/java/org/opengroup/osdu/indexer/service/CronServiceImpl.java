@@ -27,6 +27,7 @@ import org.opengroup.osdu.core.common.model.search.IndexInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.IRequestInfo;
 import org.opengroup.osdu.indexer.config.IndexerConfigurationProperties;
 import org.opengroup.osdu.indexer.util.ElasticClientHandler;
+import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -42,6 +43,8 @@ public class CronServiceImpl implements CronService{
         private JaxRsDpsLog log;
         @Inject
         private IndexerConfigurationProperties configurationProperties;
+        @Inject
+        private RequestScopedElasticsearchClient requestScopedClient;
 
         @Override
         public boolean cleanupIndices(String indexPattern) throws IOException {
@@ -50,7 +53,7 @@ public class CronServiceImpl implements CronService{
               .toEpochMilli();
 
           try {
-            ElasticsearchClient restClient = elasticClientHandler.getOrCreateRestClient();
+            ElasticsearchClient restClient = requestScopedClient.getClient();
             final List<IndexInfo> indicesList = this.indicesService.getIndexInfo(restClient, indexPattern);
             for (IndexInfo settings : indicesList) {
               long indexCreateTime = Long.parseLong(settings.getCreationDate());
@@ -72,7 +75,7 @@ public class CronServiceImpl implements CronService{
               .toEpochMilli();
 
           try {
-            ElasticsearchClient restClient = this.elasticClientHandler.getOrCreateRestClient();
+            ElasticsearchClient restClient = this.requestScopedClient.getClient();
             final List<IndexInfo> indicesList = this.indicesService.getIndexInfo(restClient, null);
             for (IndexInfo settings : indicesList) {
               long indexCreateTime = Long.parseLong(settings.getCreationDate());

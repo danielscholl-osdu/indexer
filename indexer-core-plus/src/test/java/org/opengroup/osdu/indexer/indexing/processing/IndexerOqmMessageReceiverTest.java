@@ -89,7 +89,7 @@ public class IndexerOqmMessageReceiverTest {
   public void shouldNotConsumeNotValidEvent(@FromDataPoints("NOT_VALID_EVENTS") String fileName) throws Exception {
     OqmMessage oqmMessage = ReadFromFileUtil.readEventFromFile(fileName);
     receiver.receiveMessage(oqmMessage, ackReplier);
-    verify(ackReplier).ack();
+    verify(ackReplier).nack(false);
     verify(receiver, never()).sendMessage(any());
   }
 
@@ -103,7 +103,7 @@ public class IndexerOqmMessageReceiverTest {
       }
     };
     errorProneReceiver.receiveMessage(oqmMessage, ackReplier);
-    verify(ackReplier).nack();
+    verify(ackReplier).nack(true);
   }
 
   @Theory
@@ -116,7 +116,7 @@ public class IndexerOqmMessageReceiverTest {
       }
     };
     errorProneReceiver.receiveMessage(oqmMessage, ackReplier);
-    verify(ackReplier).ack();
+    verify(ackReplier).nack(false);
   }
 
 }
