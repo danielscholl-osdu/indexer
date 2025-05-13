@@ -183,10 +183,13 @@ public class SearchClient {
 
     private SearchResponse<Map<String, Object>> searchWithRetry(ElasticsearchClient client, SearchRequest elasticSearchRequest) throws IOException, ElasticsearchException {
         int nTry = 0;
+
+        SearchResponse<Map<String, Object>> results = null;
         while(nTry <= MAX_SEARCH_RETRY) {
             nTry++;
             try {
-                return client.search(elasticSearchRequest, (Type) Map.class);
+                results = client.search(elasticSearchRequest, (Type) Map.class);
+                break;
             } catch (ElasticsearchException e) {
                 int statusCode = e.status();
                 if (nTry <= MAX_SEARCH_RETRY && (statusCode == 408 || statusCode == 429 || statusCode >= 500)) {
@@ -206,15 +209,17 @@ public class SearchClient {
                 }
             }
         }
-        // Won't reach here
-        return new SearchResponse.Builder<Map<String, Object>>().build();
+        if(results == null) {
+            results = new SearchResponse.Builder<Map<String, Object>>().build();
+        }
+        return results;
     }
 
     private void doExponentialBackOff(int factor) {
         try {
             Thread.sleep(((long)Math.pow(2, factor)) * BACKOFF_TIME_UNIT);
         } catch (InterruptedException e) {
-            //Ignore
+            Thread.currentThread().interrupt();
         }
     }
 
