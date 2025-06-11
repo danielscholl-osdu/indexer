@@ -98,7 +98,7 @@ public class Config {
     }
 
     public static String getSchemaBaseURL() {
-        return getEnvironmentVariableOrDefaultValue("HOST", DEFAULT_HOST) + SCHEMA_PATH;
+        return getEnvironmentVariableOrDefaultValue("SCHEMA_HOST", getEnvironmentVariableOrDefaultValue("HOST", DEFAULT_HOST) + SCHEMA_PATH);
     }
 
     public static String getEntitlementsDomain() {
