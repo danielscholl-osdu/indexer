@@ -12,6 +12,7 @@ on:
       - '.github/*.json'
       - '.github/*.yml'
       - '.github/*.yaml'
+      - '.github/.template-sync-commit'
       - '.vscode/**'
       - 'docs/**'
       - '**.md'
