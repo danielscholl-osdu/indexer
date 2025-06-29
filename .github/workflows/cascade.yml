@@ -3,10 +3,10 @@ name: Cascade Integration
 on:
   workflow_dispatch:       # Allow manual trigger
     inputs:
-      reason:
-        description: 'Reason for manual cascade trigger'
-        required: false
-        default: 'Manual cascade trigger'
+      issue_number:
+        description: 'GitHub issue number for the upstream sync (e.g., 123)'
+        required: true
+        type: 'string'
 
 permissions:
   contents: write
@@ -121,16 +121,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Find the most recent upstream-sync issue that's still open
-          ISSUE_NUMBER=$(gh issue list \
-            --label "upstream-sync,human-required" \
-            --state open \
-            --limit 1 \
-            --json number \
-            --jq '.[0].number // empty')
+          # Use the provided issue number from workflow input
+          ISSUE_NUMBER="${{ github.event.inputs.issue_number }}"
           
           if [ -n "$ISSUE_NUMBER" ]; then
-            echo "Found tracking issue #$ISSUE_NUMBER - updating status"
+            echo "Updating tracking issue #$ISSUE_NUMBER - cascade started"
             
             # Update labels: remove human-required, add cascade-active
             gh issue edit "$ISSUE_NUMBER" \
@@ -210,7 +205,7 @@ jobs:
                 --label "conflict,cascade-blocked,high-priority,human-required"
               
               # Update tracking issue
-              TRACKING_ISSUE=$(gh issue list --label "upstream-sync,cascade-active" --state open --limit 1 --json number --jq '.[0].number // empty')
+              TRACKING_ISSUE="${{ github.event.inputs.issue_number }}"
               if [ -n "$TRACKING_ISSUE" ]; then
                 gh issue edit "$TRACKING_ISSUE" \
                   --remove-label "cascade-active" \
@@ -333,14 +328,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Create timestamped branch for the main PR
-          DATE_SUFFIX=$(date +%Y%m%d-%H%M%S)
-          MAIN_BRANCH="release/upstream-${DATE_SUFFIX}"
+          # Use fork_integration branch directly for the PR
+          MAIN_BRANCH="fork_integration"
           
-          # Create branch from current fork_integration
-          git checkout -b $MAIN_BRANCH
+          # Ensure we're on fork_integration and it's up to date
+          git checkout fork_integration
           
-          # Push the branch
+          # Push any updates to fork_integration
           git push origin $MAIN_BRANCH
           
           # Get commit summary
@@ -402,7 +396,7 @@ jobs:
           fi
           
           # Update original tracking issue
-          TRACKING_ISSUE=$(gh issue list --label "upstream-sync,cascade-active" --state open --limit 1 --json number --jq '.[0].number // empty')
+          TRACKING_ISSUE="${{ github.event.inputs.issue_number }}"
           if [ -n "$TRACKING_ISSUE" ]; then
             gh issue edit "$TRACKING_ISSUE" \
               --remove-label "cascade-active" \

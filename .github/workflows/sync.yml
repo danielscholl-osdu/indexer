@@ -273,10 +273,16 @@ jobs:
           - Sync detected: $(date -u +%Y-%m-%dT%H:%M:%SZ)
           - Action required: Human review, merge, and cascade trigger"
           
-          gh issue create \
+          ISSUE_URL=$(gh issue create \
             --title "📥 Upstream Sync Ready for Review - $(date +%Y-%m-%d)" \
             --body "$NOTIFICATION_BODY" \
-            --label "upstream-sync,human-required"
+            --label "upstream-sync,human-required")
+          
+          # Extract issue number and update with specific instructions
+          ISSUE_NUMBER=$(basename "$ISSUE_URL")
+          
+          # Add comment with specific cascade trigger instructions
+          gh issue comment "$ISSUE_NUMBER" --body "🚀 **Cascade Integration Instructions**\n\nWhen ready to integrate changes:\n1. Go to Actions → Cascade Integration → Run workflow\n2. In the issue_number field, enter: $ISSUE_NUMBER\n3. Click Run workflow\n\nThis will automatically track progress in this issue."
 
       - name: Log sync completion
         if: steps.sync-changes.outputs.has_changes == 'true'

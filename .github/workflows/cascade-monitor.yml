@@ -37,9 +37,9 @@ jobs:
           echo "Found $UPSTREAM_COMMITS commits in fork_upstream ahead of fork_integration"
           
           if [ "$UPSTREAM_COMMITS" -gt 0 ]; then
-            # Find the tracking issue
+            # Find the tracking issue (try different label combinations)
             ISSUE_NUMBER=$(gh issue list \
-              --label "upstream-sync,human-required" \
+              --label "upstream-sync" \
               --state open \
               --limit 1 \
               --json number \
@@ -59,7 +59,7 @@ jobs:
               
               # Trigger cascade
               echo "Triggering cascade integration workflow..."
-              if gh workflow run "Cascade Integration" --repo ${{ github.repository }}; then
+              if gh workflow run "Cascade Integration" --repo ${{ github.repository }} -f issue_number="$ISSUE_NUMBER"; then
                 echo "✅ Safety net cascade triggered successfully"
               else
                 echo "❌ Failed to trigger cascade workflow"
