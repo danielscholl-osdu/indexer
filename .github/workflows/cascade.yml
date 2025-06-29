@@ -2,6 +2,11 @@ name: Cascade Integration
 
 on:
   workflow_dispatch:       # Allow manual trigger
+    inputs:
+      reason:
+        description: 'Reason for manual cascade trigger'
+        required: false
+        default: 'Manual cascade trigger'
 
 permissions:
   contents: write
@@ -111,6 +116,38 @@ jobs:
           echo "::notice::Integration pipeline clear - proceeding with cascade"
           echo "integration_in_process=false" >> $GITHUB_OUTPUT
 
+      - name: Update tracking issue - cascade started
+        if: steps.check_state.outputs.integration_in_process == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Find the most recent upstream-sync issue that's still open
+          ISSUE_NUMBER=$(gh issue list \
+            --label "upstream-sync,human-required" \
+            --state open \
+            --limit 1 \
+            --json number \
+            --jq '.[0].number // empty')
+          
+          if [ -n "$ISSUE_NUMBER" ]; then
+            echo "Found tracking issue #$ISSUE_NUMBER - updating status"
+            
+            # Update labels: remove human-required, add cascade-active
+            gh issue edit "$ISSUE_NUMBER" \
+              --remove-label "human-required" \
+              --add-label "cascade-active"
+            
+            # Add progress comment
+            gh issue comment "$ISSUE_NUMBER" --body "🚀 **Cascade Integration Started** - $(date -u +%Y-%m-%dT%H:%M:%SZ)
+            
+            Integration workflow has been triggered and is now processing upstream changes.
+            
+            **Status:** Merging \`fork_upstream\` → \`fork_integration\` → \`main\`
+            **Workflow:** [View Progress](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          else
+            echo "No tracking issue found - cascade may have been triggered independently"
+          fi
+
       - name: Merge main into fork_integration
         if: steps.check_state.outputs.integration_in_process == 'false'
         run: |
@@ -171,6 +208,21 @@ jobs:
                 --title "🚨 Cascade Conflicts: Manual Resolution Required - $(date +%Y-%m-%d)" \
                 --body "$CONFLICT_BODY" \
                 --label "conflict,cascade-blocked,high-priority,human-required"
+              
+              # Update tracking issue
+              TRACKING_ISSUE=$(gh issue list --label "upstream-sync,cascade-active" --state open --limit 1 --json number --jq '.[0].number // empty')
+              if [ -n "$TRACKING_ISSUE" ]; then
+                gh issue edit "$TRACKING_ISSUE" \
+                  --remove-label "cascade-active" \
+                  --add-label "cascade-blocked"
+                
+                gh issue comment "$TRACKING_ISSUE" --body "🚨 **Conflicts Detected** - $(date -u +%Y-%m-%dT%H:%M:%SZ)
+                
+                Merge conflicts were detected during integration. A separate conflict resolution issue has been created.
+                
+                **Status:** Cascade blocked - manual conflict resolution required
+                **SLA:** 48 hours for resolution"
+              fi
               
               echo "conflicts=true" >> $GITHUB_OUTPUT
               exit 1
@@ -349,6 +401,27 @@ jobs:
             gh pr edit $PR_NUMBER --add-label "manual-review-required"
           fi
           
+          # Update original tracking issue
+          TRACKING_ISSUE=$(gh issue list --label "upstream-sync,cascade-active" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$TRACKING_ISSUE" ]; then
+            gh issue edit "$TRACKING_ISSUE" \
+              --remove-label "cascade-active" \
+              --add-label "production-ready"
+            
+            gh issue comment "$TRACKING_ISSUE" --body "🎯 **Production PR Created** - $(date -u +%Y-%m-%dT%H:%M:%SZ)
+            
+            Integration completed successfully! Production PR has been created and is ready for final review.
+            
+            **Production PR:** $PR_URL
+            **Diff Size:** ${DIFF_LINES} lines  
+            **Breaking Changes:** ${BREAKING_CHANGES}
+            **Auto-merge:** $([ "$DIFF_LINES" -lt 1000 ] && [ "$BREAKING_CHANGES" == "false" ] && echo "✅ Enabled" || echo "❌ Manual review required")
+            
+            **Final Steps:**
+            1. Review and merge the production PR
+            2. This issue will be closed when changes reach main"
+          fi
+
           # Create tracking issue with detailed integration summary
           ISSUE_BODY="## 📦 Upstream Integration Cascade Complete
           

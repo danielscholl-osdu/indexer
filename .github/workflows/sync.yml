@@ -266,11 +266,12 @@ jobs:
           **Next Steps:**
           1. 🔍 **Review the sync PR** for any breaking changes or conflicts
           2. ✅ **Merge the PR** when satisfied with the changes  
-          3. 🚀 **Automatic cascade** will begin once merged to integrate changes
+          3. 🚀 **Manually trigger 'Cascade Integration' workflow** to integrate changes
+          4. 📊 **Monitor cascade progress** in Actions tab
           
           **Timeline:**
           - Sync detected: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          - Action required: Human review and approval"
+          - Action required: Human review, merge, and cascade trigger"
           
           gh issue create \
             --title "📥 Upstream Sync Ready for Review - $(date +%Y-%m-%d)" \
