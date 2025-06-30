@@ -59,8 +59,21 @@ jobs:
       - name: Setup Python and PR Generator
         run: |
           python -m pip install --upgrade pip
+          echo "📦 Installing AIPR 1.4.0+..."
           pip install pr-generator-agent>=1.4.0
-          echo "Installed AIPR version: $(aipr --version 2>/dev/null || echo 'version check failed')"
+          echo "✅ Installation complete. Checking AIPR availability..."
+          
+          # Debug AIPR installation
+          which aipr || echo "⚠️ aipr command not found in PATH"
+          python -m pip list | grep pr-generator-agent || echo "⚠️ pr-generator-agent not found in pip list"
+          
+          # Test AIPR version
+          if aipr --version 2>/dev/null; then
+            echo "✅ AIPR version check successful"
+          else
+            echo "⚠️ AIPR version check failed - testing fallback"
+            python -c "import aipr; print('✅ AIPR module importable')" 2>/dev/null || echo "❌ AIPR module not importable"
+          fi
 
       - name: Configure Git
         run: |
@@ -144,15 +157,20 @@ jobs:
           # Try AIPR with timeout and validation (single call for efficiency)
           META_COMMIT_MSG=$(timeout 60s aipr commit --from $BEFORE_SHA --context "upstream sync" 2>/dev/null || echo "")
           
-          if [[ -n "$META_COMMIT_MSG" ]] && [[ "$META_COMMIT_MSG" =~ ^(feat|fix|chore|docs|style|refactor|perf|test|build|ci):[\ ].+ ]]; then
-            AIPR_SUCCESS=true
-            echo "✅ Generated AI commit message: $META_COMMIT_MSG"
-          else
-            if [[ -n "$META_COMMIT_MSG" ]]; then
-              echo "⚠️ AIPR returned invalid format: $META_COMMIT_MSG"
+          if [[ -n "$META_COMMIT_MSG" ]]; then
+            # Extract first line for validation, but use full message for commit
+            FIRST_LINE=$(echo "$META_COMMIT_MSG" | head -n1)
+            if [[ -n "$FIRST_LINE" ]] && [[ "$FIRST_LINE" =~ ^(feat|fix|chore|docs|style|refactor|perf|test|build|ci)(\([^)]+\))?:[\ ].+ ]]; then
+              AIPR_SUCCESS=true
+              echo "✅ Generated AI commit message (first line): $FIRST_LINE"
+              if [[ $(echo "$META_COMMIT_MSG" | wc -l) -gt 1 ]]; then
+                echo "   📝 Multi-line commit with additional details"
+              fi
             else
-              echo "⚠️ AIPR command failed or timed out"
+              echo "⚠️ AIPR returned invalid format (first line): $FIRST_LINE"
             fi
+          else
+            echo "⚠️ AIPR command failed or timed out"
           fi
           
           # Fallback to conservative feat: message if AIPR failed
@@ -240,14 +258,20 @@ jobs:
             
             # Use aipr tool with vulnerability analysis and timeout protection
             PR_DESCRIPTION=""
-            if timeout 90s aipr -t fork_upstream --vulns -p meta -m $LLM_MODEL --max-diff-lines $MAX_DIFF_LINES >/dev/null 2>&1; then
-              PR_DESCRIPTION=$(aipr -t fork_upstream --vulns -p meta -m $LLM_MODEL --max-diff-lines $MAX_DIFF_LINES 2>/dev/null || echo "")
-            fi
+            echo "   🔍 Attempting AIPR PR generation with model: $LLM_MODEL"
+            
+            # Single call approach for PR description (similar to commit generation)
+            PR_DESCRIPTION=$(timeout 90s aipr -t fork_upstream --vulns -p meta -m $LLM_MODEL --max-diff-lines $MAX_DIFF_LINES 2>/dev/null || echo "")
             
             if [[ -n "$PR_DESCRIPTION" ]] && [[ ${#PR_DESCRIPTION} -gt 50 ]]; then
               echo "✅ Generated enhanced PR description using $LLM_MODEL (${#PR_DESCRIPTION} characters)"
             else
-              echo "⚠️ AI PR generation failed or returned insufficient content, using enhanced fallback"
+              if [[ -n "$PR_DESCRIPTION" ]]; then
+                echo "⚠️ AIPR PR description too short (${#PR_DESCRIPTION} chars): $PR_DESCRIPTION"
+              else
+                echo "⚠️ AIPR PR generation failed or timed out"
+              fi
+              echo "   🔄 Using enhanced fallback description"
               PR_DESCRIPTION="$FALLBACK_DESCRIPTION"
             fi
           else
