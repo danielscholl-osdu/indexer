@@ -160,7 +160,9 @@ jobs:
           if [[ -n "$META_COMMIT_MSG" ]]; then
             # Extract first line for validation, but use full message for commit
             FIRST_LINE=$(echo "$META_COMMIT_MSG" | head -n1)
-            if [[ -n "$FIRST_LINE" ]] && [[ "$FIRST_LINE" =~ ^(feat|fix|chore|docs|style|refactor|perf|test|build|ci)(\([^)]+\))?:[\ ].+ ]]; then
+            # Use variable to avoid bash parsing issues with regex
+            CONVENTIONAL_REGEX='^(feat|fix|chore|docs|style|refactor|perf|test|build|ci)(\([^)]+\))?:[[:space:]].+'
+            if [[ -n "$FIRST_LINE" ]] && [[ "$FIRST_LINE" =~ $CONVENTIONAL_REGEX ]]; then
               AIPR_SUCCESS=true
               echo "✅ Generated AI commit message (first line): $FIRST_LINE"
               if [[ $(echo "$META_COMMIT_MSG" | wc -l) -gt 1 ]]; then
