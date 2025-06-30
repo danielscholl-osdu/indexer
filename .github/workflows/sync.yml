@@ -59,7 +59,8 @@ jobs:
       - name: Setup Python and PR Generator
         run: |
           python -m pip install --upgrade pip
-          pip install pr-generator-agent
+          pip install pr-generator-agent>=1.4.0
+          echo "Installed AIPR version: $(aipr --version 2>/dev/null || echo 'version check failed')"
 
       - name: Configure Git
         run: |
@@ -120,6 +121,10 @@ jobs:
           # Create a new branch for the sync
           git checkout -b $SYNC_BRANCH
           
+          # Capture state before sync for meta commit analysis
+          BEFORE_SHA=$(git rev-parse fork_upstream)
+          echo "Captured pre-sync state: $BEFORE_SHA"
+          
           # Try to merge upstream changes, automatically preferring upstream versions on conflict
           git merge upstream/$DEFAULT_BRANCH -X theirs --no-edit
           
@@ -129,6 +134,36 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
             exit 0
           fi
+          
+          # Generate conventional commit message using AIPR 1.4.0 with comprehensive error handling
+          META_COMMIT_MSG=""
+          AIPR_SUCCESS=false
+          
+          echo "Attempting to generate AI-powered conventional commit message..."
+          
+          # Try AIPR with timeout and validation (single call for efficiency)
+          META_COMMIT_MSG=$(timeout 60s aipr commit --from $BEFORE_SHA --context "upstream sync" 2>/dev/null || echo "")
+          
+          if [[ -n "$META_COMMIT_MSG" ]] && [[ "$META_COMMIT_MSG" =~ ^(feat|fix|chore|docs|style|refactor|perf|test|build|ci):[\ ].+ ]]; then
+            AIPR_SUCCESS=true
+            echo "✅ Generated AI commit message: $META_COMMIT_MSG"
+          else
+            if [[ -n "$META_COMMIT_MSG" ]]; then
+              echo "⚠️ AIPR returned invalid format: $META_COMMIT_MSG"
+            else
+              echo "⚠️ AIPR command failed or timed out"
+            fi
+          fi
+          
+          # Fallback to conservative feat: message if AIPR failed
+          if [ "$AIPR_SUCCESS" = false ]; then
+            META_COMMIT_MSG="feat: sync upstream changes from $UPSTREAM_VERSION"
+            echo "⚠️ Using fallback commit message: $META_COMMIT_MSG"
+          fi
+          
+          # Add meta commit for Release Please to use for versioning
+          git commit --allow-empty -m "$META_COMMIT_MSG"
+          echo "✅ Added meta commit for Release Please integration"
           
           echo "has_changes=true" >> $GITHUB_OUTPUT
           
@@ -199,22 +234,27 @@ jobs:
           fi
           echo "Diff contains $DIFF_LINES lines"
           
-          # Generate PR description using AI if available
+          # Generate PR description using AI if available with comprehensive error handling
           if [[ "$USE_LLM" == "true" && "$DIFF_LINES" -le "$MAX_DIFF_LINES" ]]; then
             echo "Generating AI-enhanced PR description using $LLM_MODEL..."
             
-            # Use aipr tool with vulnerability analysis
-            PR_DESCRIPTION=$(aipr -t fork_upstream --vulns -p meta -m $LLM_MODEL --max-diff-lines $MAX_DIFF_LINES 2>/dev/null || echo "")
+            # Use aipr tool with vulnerability analysis and timeout protection
+            PR_DESCRIPTION=""
+            if timeout 90s aipr -t fork_upstream --vulns -p meta -m $LLM_MODEL --max-diff-lines $MAX_DIFF_LINES >/dev/null 2>&1; then
+              PR_DESCRIPTION=$(aipr -t fork_upstream --vulns -p meta -m $LLM_MODEL --max-diff-lines $MAX_DIFF_LINES 2>/dev/null || echo "")
+            fi
             
-            if [[ -n "$PR_DESCRIPTION" ]]; then
-              echo "Generated enhanced PR description using $LLM_MODEL"
+            if [[ -n "$PR_DESCRIPTION" ]] && [[ ${#PR_DESCRIPTION} -gt 50 ]]; then
+              echo "✅ Generated enhanced PR description using $LLM_MODEL (${#PR_DESCRIPTION} characters)"
             else
-              echo "AI generation failed, using fallback description"
+              echo "⚠️ AI PR generation failed or returned insufficient content, using enhanced fallback"
               PR_DESCRIPTION="$FALLBACK_DESCRIPTION"
             fi
           else
             if [[ "$DIFF_LINES" -gt "$MAX_DIFF_LINES" ]]; then
-              echo "Diff is larger than $MAX_DIFF_LINES lines; using fallback description"
+              echo "⚠️ Diff is larger than $MAX_DIFF_LINES lines; using fallback description to avoid token limits"
+            else
+              echo "⚠️ No LLM API keys available; using fallback description"
             fi
             PR_DESCRIPTION="$FALLBACK_DESCRIPTION"
           fi
