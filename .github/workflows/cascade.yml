@@ -538,7 +538,13 @@ jobs:
             BREAKING_CHANGES=true
           fi
           
-          # Create detailed PR body with commit summary
+          # Create detailed PR body with commit summary and issue closure
+          TRACKING_ISSUE="${{ github.event.inputs.issue_number }}"
+          CLOSE_ISSUE_TEXT=""
+          if [ -n "$TRACKING_ISSUE" ]; then
+            CLOSE_ISSUE_TEXT="\n\nCloses #${TRACKING_ISSUE}"
+          fi
+          
           PR_BODY="## 🚀 Upstream Integration Ready for Production
           
           This PR cascades validated upstream changes to main via release branch \`$RELEASE_BRANCH\`.
@@ -560,21 +566,20 @@ jobs:
           **Conflicts:** ✅ Resolved
           **Ready for Production:** ✅ Yes
           
-          > **Note:** The \`fork_integration\` branch is preserved for future use. This release branch can be safely deleted after merge."
+          > **Note:** The \`fork_integration\` branch is preserved for future use. This release branch can be safely deleted after merge.${CLOSE_ISSUE_TEXT}"
           
           PR_URL=$(gh pr create \
             --base main \
             --head $RELEASE_BRANCH \
             --title "🚀 Production Release: Upstream Integration - $(date +%Y-%m-%d)" \
             --body "$PR_BODY" \
-            --label "upstream-sync,production-ready,cascade-active,validated,human-required")
+            --label "upstream-sync,validated")
           
           echo "Main PR created: $PR_URL"
           PR_NUMBER=$(basename $PR_URL)
           
           # All production PRs require human review - no auto-merge
           echo "Production PR requires manual review before merge"
-          gh pr edit $PR_NUMBER --add-label "manual-review-required"
           
           # Update original tracking issue
           TRACKING_ISSUE="${{ github.event.inputs.issue_number }}"
