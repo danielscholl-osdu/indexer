@@ -561,13 +561,8 @@ jobs:
           
           > **Note:** The \`fork_integration\` branch is preserved for future use. This release branch can be safely deleted after merge."
           
-          # Get upstream SHA for consistent title format
-          if git show-ref --verify --quiet refs/remotes/upstream/main; then
-            DEFAULT_BRANCH="main"
-          else
-            DEFAULT_BRANCH="master"
-          fi
-          UPSTREAM_SHA=$(git rev-parse upstream/$DEFAULT_BRANCH)
+          # Get upstream SHA for consistent title format (from fork_upstream branch)
+          UPSTREAM_SHA=$(git rev-parse origin/fork_upstream)
           
           PR_URL=$(gh pr create \
             --base main \
@@ -705,7 +700,18 @@ jobs:
           2. Identify and fix the root cause
           3. Re-run the cascade workflow or manually complete the integration"
 
-          gh issue create \
+          FAILURE_ISSUE_URL=$(gh issue create \
             --title "🚨 Cascade Pipeline Failure: $FAILURE_TYPE - $(date +%Y-%m-%d)" \
             --body "$ISSUE_BODY" \
-            --label "cascade-failed,high-priority,human-required"
+            --label "high-priority,human-required")
+          
+          # Update original tracking issue with failure information
+          TRACKING_ISSUE="${{ github.event.inputs.issue_number }}"
+          if [ -n "$TRACKING_ISSUE" ]; then
+            # Update tracking issue labels and add comment about failure
+            gh issue edit "$TRACKING_ISSUE" \
+              --remove-label "cascade-active" \
+              --add-label "cascade-failed,human-required"
+            
+            gh issue comment "$TRACKING_ISSUE" --body $'❌ **Cascade Integration Failed** - '"$(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n\nThe cascade integration workflow encountered an error and could not complete successfully.\n\n**Failure Details:** '"$FAILURE_ISSUE_URL"$'\n**Workflow Run:** ['"${{ github.run_id }}"$']('"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"$')\n\n**Recovery Instructions:**\n1. Review the failure issue for technical details\n2. Investigate and fix the root cause (may require changes to `fork_integration` branch)\n3. Remove the `human-required` label from this issue when ready\n4. The monitoring system will automatically retry the cascade integration\n\n**Human Action Required:** Please resolve the failure and remove the `human-required` label to trigger automatic retry.'
+          fi

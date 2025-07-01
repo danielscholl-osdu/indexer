@@ -201,3 +201,60 @@ jobs:
               echo "There are blocked or escalated items in the cascade pipeline that need attention."
             fi
           } >> $GITHUB_STEP_SUMMARY
+
+  detect-recovery-ready:
+    name: "🔄 Automatic Recovery - Detect Ready Retries"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Check for recovery-ready issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for issues ready for automatic cascade retry..."
+          
+          # Find issues with cascade-failed but NOT human-required (human resolved)
+          RECOVERY_ISSUES=$(gh issue list \
+            --label "cascade-failed" \
+            --state open \
+            --json number,labels,title,url \
+            --jq '.[] | select(.labels | map(.name) | contains(["cascade-failed"]) and (contains(["human-required"]) | not))')
+          
+          if [ -z "$RECOVERY_ISSUES" ]; then
+            echo "No recovery-ready issues found"
+            exit 0
+          fi
+          
+          echo "Found recovery-ready issues:"
+          echo "$RECOVERY_ISSUES" | jq .
+          
+          # Process each recovery-ready issue
+          echo "$RECOVERY_ISSUES" | jq -r '.number' | while read ISSUE_NUMBER; do
+            echo "Processing recovery for issue #$ISSUE_NUMBER"
+            
+            # Update issue labels: remove cascade-failed, add cascade-active
+            gh issue edit "$ISSUE_NUMBER" \
+              --remove-label "cascade-failed" \
+              --add-label "cascade-active"
+            
+            # Add comment about retry
+            gh issue comment "$ISSUE_NUMBER" --body $'🔄 **Automatic Recovery Initiated** - '"$(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n\nThe monitoring system detected that the failure has been resolved (human-required label removed).\n\n**Auto-Action:** Initiating cascade integration retry automatically\n**Monitor Run:** ['"${{ github.run_id }}"$']('"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"$')\n\nThe cascade integration will be retried. If it fails again, a new failure issue will be created.'
+            
+            # Trigger cascade retry
+            echo "Triggering cascade integration retry for issue #$ISSUE_NUMBER"
+            if gh workflow run "Cascade Integration" --repo ${{ github.repository }} -f issue_number="$ISSUE_NUMBER"; then
+              echo "✅ Cascade retry triggered successfully for issue #$ISSUE_NUMBER"
+            else
+              echo "❌ Failed to trigger cascade retry for issue #$ISSUE_NUMBER"
+              # Revert labels on failure to trigger
+              gh issue edit "$ISSUE_NUMBER" \
+                --remove-label "cascade-active" \
+                --add-label "cascade-failed,human-required"
+              
+              gh issue comment "$ISSUE_NUMBER" --body $'❌ **Automatic Recovery Failed** - '"$(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n\nThe monitoring system failed to trigger the cascade integration retry.\n\n**Manual Action Required:** Please manually trigger the Cascade Integration workflow or contact system administrators.\n\n**Workflow Trigger Error:** Unable to start cascade workflow via API'
+            fi
+          done
