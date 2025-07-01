@@ -63,11 +63,15 @@ jobs:
           pip install pr-generator-agent>=1.4.0
           echo "✅ Installation complete. Checking AIPR availability..."
           
+          # Add user bin directory to PATH for this session
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
           # Debug AIPR installation
           which aipr || echo "⚠️ aipr command not found in PATH"
           python -m pip list | grep pr-generator-agent || echo "⚠️ pr-generator-agent not found in pip list"
           
-          # Test AIPR version
+          # Test AIPR version with updated PATH
           if aipr --version 2>/dev/null; then
             echo "✅ AIPR version check successful"
           else
@@ -113,7 +117,7 @@ jobs:
           fi
           echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> $GITHUB_ENV
 
-      - name: Create Pull Request
+      - name: Sync upstream changes
         id: sync-changes
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -262,15 +266,15 @@ jobs:
             PR_DESCRIPTION=""
             echo "   🔍 Attempting AIPR PR generation with model: $LLM_MODEL"
             
-            # Single call approach for PR description (use correct aipr pr syntax)
-            echo "   📝 Command: aipr pr -t fork_upstream --vulns -p meta"
-            PR_DESCRIPTION=$(timeout 90s aipr pr -t fork_upstream --vulns -p meta 2>&1 || echo "AIPR_FAILED")
+            # Single call approach for PR description (use correct aipr pr syntax, no --vulns to reduce prompt size)
+            echo "   📝 Command: aipr pr -t fork_upstream -p meta"
+            PR_DESCRIPTION=$(timeout 90s aipr pr -t fork_upstream -p meta 2>&1 || echo "AIPR_FAILED")
             
-            # Debug what we got back
+            # Debug what we got back and handle all failure cases
             if [[ "$PR_DESCRIPTION" == "AIPR_FAILED" ]]; then
-              echo "   ❌ AIPR pr command execution failed"
+              echo "   ❌ AIPR pr command execution failed or timed out"
               PR_DESCRIPTION=""
-            elif [[ "$PR_DESCRIPTION" =~ ^[Ee]rror || "$PR_DESCRIPTION" =~ [Ff]ailed ]]; then
+            elif [[ "$PR_DESCRIPTION" =~ ^[Ee]rror || "$PR_DESCRIPTION" =~ [Ff]ailed || "$PR_DESCRIPTION" =~ "prompt is too long" || "$PR_DESCRIPTION" =~ "maximum" ]]; then
               echo "   ❌ AIPR pr error: $PR_DESCRIPTION"
               PR_DESCRIPTION=""
             fi
