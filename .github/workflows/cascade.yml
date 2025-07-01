@@ -580,8 +580,7 @@ jobs:
           TRACKING_ISSUE="${{ github.event.inputs.issue_number }}"
           if [ -n "$TRACKING_ISSUE" ]; then
             gh issue edit "$TRACKING_ISSUE" \
-              --remove-label "cascade-active" \
-              --add-label "production-ready"
+              --remove-label "cascade-active"
             
             gh issue comment "$TRACKING_ISSUE" --body "🎯 **Production PR Created** - $(date -u +%Y-%m-%dT%H:%M:%SZ)
             
