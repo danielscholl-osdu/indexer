@@ -350,7 +350,7 @@ jobs:
             "---" \
             "**What You Need to Do Now**" \
             "1. Review & merge the sync PR: [$PR_URL]($PR_URL)" \
-            "2. After merging, [run the Cascade Integration workflow](../../actions/workflows/cascade.yml):" \
+            "2. After merging, [run the Cascade Integration workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/cascade.yml):" \
             "   - In the \`issue_number\` field, enter: \`$ISSUE_NUMBER\`" \
             "   - Click **Run workflow**" \
             "> **Note**: If not triggered manually, the automated monitor will start the cascade process within 6 hours." \
