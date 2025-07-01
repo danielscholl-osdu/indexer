@@ -568,7 +568,7 @@ jobs:
             --head $RELEASE_BRANCH \
             --title "🚀 Production Release: Upstream Integration - $(date +%Y-%m-%d)" \
             --body "$PR_BODY" \
-            --label "upstream-sync,validated")
+            --label "upstream-sync,human-required")
           
           echo "Main PR created: $PR_URL"
           PR_NUMBER=$(basename $PR_URL)
