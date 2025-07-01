@@ -262,8 +262,18 @@ jobs:
             PR_DESCRIPTION=""
             echo "   🔍 Attempting AIPR PR generation with model: $LLM_MODEL"
             
-            # Single call approach for PR description (similar to commit generation)
-            PR_DESCRIPTION=$(timeout 90s aipr -t fork_upstream --vulns -p meta -m $LLM_MODEL --max-diff-lines $MAX_DIFF_LINES 2>/dev/null || echo "")
+            # Single call approach for PR description (use correct aipr pr syntax)
+            echo "   📝 Command: aipr pr -t fork_upstream --vulns -p meta"
+            PR_DESCRIPTION=$(timeout 90s aipr pr -t fork_upstream --vulns -p meta 2>&1 || echo "AIPR_FAILED")
+            
+            # Debug what we got back
+            if [[ "$PR_DESCRIPTION" == "AIPR_FAILED" ]]; then
+              echo "   ❌ AIPR pr command execution failed"
+              PR_DESCRIPTION=""
+            elif [[ "$PR_DESCRIPTION" =~ ^[Ee]rror || "$PR_DESCRIPTION" =~ [Ff]ailed ]]; then
+              echo "   ❌ AIPR pr error: $PR_DESCRIPTION"
+              PR_DESCRIPTION=""
+            fi
             
             if [[ -n "$PR_DESCRIPTION" ]] && [[ ${#PR_DESCRIPTION} -gt 50 ]]; then
               echo "✅ Generated enhanced PR description using $LLM_MODEL (${#PR_DESCRIPTION} characters)"
