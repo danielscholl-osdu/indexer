@@ -19,7 +19,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -120,7 +120,7 @@ jobs:
       - name: Sync upstream changes
         id: sync-changes
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
           AZURE_API_BASE: ${{ secrets.AZURE_API_BASE }}
@@ -215,7 +215,7 @@ jobs:
         if: steps.sync-changes.outputs.has_changes == 'true'
         id: create-pr
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
           AZURE_API_BASE: ${{ secrets.AZURE_API_BASE }}
@@ -325,7 +325,7 @@ jobs:
       - name: Create human notification issue
         if: steps.sync-changes.outputs.has_changes == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_URL="${{ steps.create-pr.outputs.pr-url }}"
           PR_NUMBER="${{ steps.create-pr.outputs.pr-number }}"
@@ -380,7 +380,7 @@ jobs:
             "- 📝 Cascade results and next steps" \
             "**Label Tracking**" \
             "Monitor PR/issue labels for current status:" \
-            "\`upstream-sync\` → \`cascade-active\` → \`cascade-ready\` → \`production-ready\`" \
+            "\`upstream-sync\` → \`cascade-active\` → \`validated\` (production PR)" \
             "---" \
             "**Timeline**" \
             "- **Sync detected**: \`$(date -u +%Y-%m-%dT%H:%M:%SZ)\`" \
@@ -401,7 +401,7 @@ jobs:
       - name: Handle Failure
         if: failure()
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ISSUE_BODY="The automated upstream sync workflow failed.
 
