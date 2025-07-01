@@ -656,13 +656,6 @@ The following software have components provided under the terms of this license:
 - Jetty Server (from http://jetty.mortbay.org, https://repo1.maven.org/maven2/org/mortbay/jetty/jetty)
 
 ========================================================================
-RSA-MD
-========================================================================
-The following software have components provided under the terms of this license:
-
-- AWS Java SDK :: Services :: Amazon SQS (from https://aws.amazon.com/sdkforjava)
-
-========================================================================
 SAX-PD
 ========================================================================
 The following software have components provided under the terms of this license:
