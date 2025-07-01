@@ -194,8 +194,9 @@ jobs:
           # Push changes with force flag to handle any branch name conflicts
           git push -f origin $SYNC_BRANCH
 
-          # Get upstream version for PR description
-          UPSTREAM_VERSION=$(git describe --tags --abbrev=0 upstream/$DEFAULT_BRANCH 2>/dev/null || echo "latest")
+          # Get upstream version for PR description (use SHA instead of vague "latest")
+          UPSTREAM_SHA=$(git rev-parse upstream/$DEFAULT_BRANCH)
+          UPSTREAM_VERSION=$(git describe --tags --abbrev=0 upstream/$DEFAULT_BRANCH 2>/dev/null || echo "${UPSTREAM_SHA:0:8}")
           
           # Get the changes for the PR description
           CHANGES=$(git log --pretty=format:"* %s" fork_upstream..$SYNC_BRANCH)
