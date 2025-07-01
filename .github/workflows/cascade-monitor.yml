@@ -49,13 +49,7 @@ jobs:
               echo "Found missed cascade trigger for issue #$ISSUE_NUMBER - auto-initiating"
               
               # Comment on issue about auto-trigger
-              gh issue comment "$ISSUE_NUMBER" --body "🤖 **Auto-Cascade Initiated** - $(date -u +%Y-%m-%dT%H:%M:%SZ)
-              
-              Safety net detected that upstream PR was merged but cascade integration was not triggered manually.
-              
-              **Auto-Action:** Initiating cascade integration automatically as safety net
-              **Found:** $UPSTREAM_COMMITS commits in \`fork_upstream\` awaiting integration
-              **Workflow:** [Monitor Progress](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+              gh issue comment "$ISSUE_NUMBER" --body "🤖 **Auto-Cascade Initiated** - $(date -u +%Y-%m-%dT%H:%M:%SZ). Safety net detected that upstream PR was merged but cascade integration was not triggered manually. **Auto-Action:** Initiating cascade integration automatically as safety net. **Found:** $UPSTREAM_COMMITS commits in \`fork_upstream\` awaiting integration. **Workflow:** [Monitor Progress](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
               
               # Trigger cascade
               echo "Triggering cascade integration workflow..."
@@ -63,11 +57,7 @@ jobs:
                 echo "✅ Safety net cascade triggered successfully"
               else
                 echo "❌ Failed to trigger cascade workflow"
-                gh issue comment "$ISSUE_NUMBER" --body "❌ **Auto-trigger Failed** - $(date -u +%Y-%m-%dT%H:%M:%SZ)
-                
-                Safety net detected pending upstream changes but failed to automatically trigger cascade integration.
-                
-                **Manual Action Required:** Please trigger 'Cascade Integration' workflow manually"
+                gh issue comment "$ISSUE_NUMBER" --body "❌ **Auto-trigger Failed** - $(date -u +%Y-%m-%dT%H:%M:%SZ). Safety net detected pending upstream changes but failed to automatically trigger cascade integration. **Manual Action Required:** Please trigger 'Cascade Integration' workflow manually"
                 exit 1
               fi
             else

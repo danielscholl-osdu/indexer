@@ -342,13 +342,8 @@ jobs:
             echo "success=true" >> $GITHUB_OUTPUT
             
             if [ -n "$TRACKING_ISSUE" ]; then
-              gh issue comment "$TRACKING_ISSUE" --body "✅ **Integration Validation Passed** - $(date -u +%Y-%m-%dT%H:%M:%SZ)
-              
-              All validation checks completed successfully:
-              
-              ${VALIDATION_DETAILS}
-              
-              **Next Step:** Creating production PR to merge validated changes to \`main\` branch."
+              VALIDATION_DISPLAY=$(echo -e "${VALIDATION_DETAILS}")
+              gh issue comment "$TRACKING_ISSUE" --body "✅ **Integration Validation Passed** - $(date -u +%Y-%m-%dT%H:%M:%SZ). All validation checks completed successfully: ${VALIDATION_DISPLAY}. **Next Step:** Creating production PR to merge validated changes to \`main\` branch."
             fi
           else
             echo "❌ Validation checks failed"
@@ -542,10 +537,10 @@ jobs:
           TRACKING_ISSUE="${{ github.event.inputs.issue_number }}"
           CLOSE_ISSUE_TEXT=""
           if [ -n "$TRACKING_ISSUE" ]; then
-            CLOSE_ISSUE_TEXT="\n\nCloses #${TRACKING_ISSUE}"
+            CLOSE_ISSUE_TEXT="Closes #${TRACKING_ISSUE}\n\n"
           fi
           
-          PR_BODY="## 🚀 Upstream Integration Ready for Production
+          PR_BODY="${CLOSE_ISSUE_TEXT}## 🚀 Upstream Integration Ready for Production
           
           This PR cascades validated upstream changes to main via release branch \`$RELEASE_BRANCH\`.
           
@@ -566,7 +561,7 @@ jobs:
           **Conflicts:** ✅ Resolved
           **Ready for Production:** ✅ Yes
           
-          > **Note:** The \`fork_integration\` branch is preserved for future use. This release branch can be safely deleted after merge.${CLOSE_ISSUE_TEXT}"
+          > **Note:** The \`fork_integration\` branch is preserved for future use. This release branch can be safely deleted after merge."
           
           PR_URL=$(gh pr create \
             --base main \
