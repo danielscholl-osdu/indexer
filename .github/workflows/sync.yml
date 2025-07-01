@@ -72,7 +72,7 @@ jobs:
           python -m pip list | grep pr-generator-agent || echo "⚠️ pr-generator-agent not found in pip list"
           
           # Test AIPR version with updated PATH
-          if aipr --version 2>/dev/null; then
+          if aipr --help 2>/dev/null; then
             echo "✅ AIPR version check successful"
           else
             echo "⚠️ AIPR version check failed - testing fallback"
