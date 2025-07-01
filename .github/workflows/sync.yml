@@ -380,7 +380,7 @@ jobs:
             "- 📝 Cascade results and next steps" \
             "**Label Tracking**" \
             "Monitor PR/issue labels for current status:" \
-            "\`upstream-sync\` → \`cascade-active\` → \`validated\` (production PR)" \
+            "\`upstream-sync\` → \`cascade-active\` → \`validated\`" \
             "---" \
             "**Timeline**" \
             "- **Sync detected**: \`$(date -u +%Y-%m-%dT%H:%M:%SZ)\`" \
