@@ -205,7 +205,9 @@ jobs:
           github.base_ref == 'main' &&
           !contains(github.head_ref, 'fork_') &&
           !startsWith(github.event.pull_request.title, 'chore(sync)') &&
-          !startsWith(github.event.pull_request.title, '⬆️ Sync with upstream')
+          !startsWith(github.event.pull_request.title, '⬆️ Sync with upstream') &&
+          !startsWith(github.event.pull_request.title, '🚀 Production Release: Upstream Integration') &&
+          !startsWith(github.head_ref, 'release/upstream-')
         uses: webiny/action-conventional-commits@v1.1.0
         with:
           config-file-path: '.conventionalcommits.yml'
