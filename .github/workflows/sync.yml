@@ -117,6 +117,31 @@ jobs:
           fi
           echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> $GITHUB_ENV
 
+      - name: Check for active cascades
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for active cascade integrations..."
+          
+          ACTIVE_CASCADE=$(gh issue list \
+            --label "upstream-sync,cascade-active" \
+            --state open \
+            --json number,title)
+          
+          if [ -n "$ACTIVE_CASCADE" ] && [ "$ACTIVE_CASCADE" != "[]" ]; then
+            echo "❌ Upstream sync blocked - active cascade in progress"
+            echo "Active cascades:"
+            echo "$ACTIVE_CASCADE" | jq -r '.[] | "- Issue #\(.number): \(.title)"'
+            echo ""
+            echo "**Resolution Options:**"
+            echo "1. Wait for current cascade to complete or fail"
+            echo "2. If cascade has failed with human-required label, upstream sync is allowed (for potential fixes)"
+            echo "3. Manually resolve any stuck cascades before retrying upstream sync"
+            exit 1
+          fi
+          
+          echo "✅ No active cascades detected - proceeding with upstream sync"
+
       - name: Sync upstream changes
         id: sync-changes
         env:
