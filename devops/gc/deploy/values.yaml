@@ -7,7 +7,7 @@ global:
   limitsEnabled: true
   logLevel: "ERROR"
   tier: ""
-  autoscaling: true
+  autoscalingMode: "cpu"
 
 data:
   # Configmap
@@ -25,6 +25,12 @@ data:
   image: ""
   imagePullPolicy: "IfNotPresent"
   serviceAccountName: "indexer"
+  affinityLabelsSpot:
+    cloud.google.com/gke-provisioning:
+      - spot
+  affinityLabelsStandard:
+    cloud.google.com/gke-provisioning:
+      - standard
   # redis connection. Change it if you want to use external redis
   redisIndexerHost: ""
   redisIndexerPort: 6379
@@ -35,7 +41,6 @@ conf:
   configmap: "indexer-config"
   elasticSecretName: "indexer-elastic-secret"
   indexerRedisSecretName: "indexer-redis-secret"
-  replicas: 2
 
 istio:
   proxyCPU: "10m"
@@ -45,20 +50,25 @@ istio:
   sidecarInject: true
 
 hpa:
-  minReplicas: 6
-  maxReplicas: 15
-  pubsubTargetType: AverageValue
-  pubsubTargetValue: 50
-  cpuTargetType: Utilization
-  cpuTargetValue: 70
-  memoryTargetType: Utilization
-  memoryTargetValue: 70
-  behaviorScaleUpStabilizationWindowSeconds: 60
-  behaviorScaleUpPoliciesValue: 1
-  behaviorScaleUpPoliciesPeriodSeconds: 120
-  behaviorScaleDownStabilizationWindowSeconds: 60
-  behaviorScaleDownPoliciesValue: 1
-  behaviorScaleDownPoliciesPeriodSeconds: 120
+  minReplicas: 1
+  maxReplicas: 6
+  cpu:
+    utilization: 200
+    scaleUpStabilizationWindowSeconds: 30
+    scaleUpValue: 200
+    scaleUpPeriod: 15
+    scaleDownStabilizationWindowSeconds: 150
+    scaleDownValue: 100
+    scaleDownPeriod: 15
+  requests:
+    targetType: "AverageValue"
+    targetValue: 40
+    scaleUpStabilizationWindowSeconds: 10
+    scaleUpValue: 50
+    scaleUpPeriod: 15
+    scaleDownStabilizationWindowSeconds: 60
+    scaleDownValue: 25
+    scaleDownPeriod: 60
 
 limits:
   maxTokens: 200 #rps
