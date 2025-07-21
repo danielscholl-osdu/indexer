@@ -1,63 +1,33 @@
-# OSDU SPI Fork Management Template
+# Documentation Home
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![GitHub Issues](https://img.shields.io/github/issues/danielscholl-osdu/osdu-fork-template)](https://github.com/danielscholl-osdu/osdu-fork-template/issues)
-[![Documentation](https://img.shields.io/badge/Documentation-Live-blue?logo=gitbook)](https://danielscholl-osdu.github.io/osdu-fork-template/)
+Official Documentation home at [https://osdu.pages.opengroup.org/platform/system/indexer-service/](https://osdu.pages.opengroup.org/platform/system/indexer-service/)
 
-> **Automated management for long-lived forks with AI-enhanced workflows**
+# Introduction 
 
-## What This Template Provides
+os-indexer-azure is a [Spring Boot](https://spring.io/projects/spring-boot) service that is responsible for indexing Records that enable the `os-search` service to execute OSDU R2 domain searches against Elasticsearch.
 
-- 🔄 Automated upstream synchronization with conflict detection
-- 🤖 AI-enhanced PR descriptions and conflict guidance
-- 🛡️ Three-branch safety strategy
-- 📈 Release correlation tracking
-- 🎯 Zero-maintenance operations
+## Azure Implementation
 
-**Perfect for**: OSDU teams needing Azure SPI customizations while staying current with upstream.
+The [os-indexer-azure README.md](./provider/indexer-azure/README.md) has all the information needed to get started
+running the `os-indexer` Azure implementation
 
-## Quick Start
+## Google Cloud Implementation
 
-### 1. Create Your Fork Repository
+All documentation for the Google Cloud implementation of `os-indexer` lives [here](./provider/indexer-gc/README.md)
 
-Click **"Use this template"** → Choose repository name → **Create repository**
+## AWS Implementation
 
-### 2. Initialize Your Fork
+All documentation for the AWS implementation of `os-indexer` lives [here](./provider/indexer-aws/README.md)
 
-1. Go to **Actions** → **"Repository Initialization"** → **"Run workflow"**
-2. Follow the setup instructions in the automatically created issue
-3. Provide your upstream repository URL when prompted
-4. Wait 2-5 minutes for complete setup
+## Open API 3.0 - Swagger
+- Swagger UI : https://host/context-path/swagger (will redirect to https://host/context-path/swagger-ui/index.html)
+- api-docs (JSON) : https://host/context-path/api-docs
+- api-docs (YAML) : https://host/context-path/api-docs.yaml
 
-### 3. Configure Secrets (Optional but Recommended)
+All the Swagger and OpenAPI related common properties are managed here [swagger.properties](./indexer-core/src/main/resources/swagger.properties)
 
-For full automation, add these secrets in **Settings** → **Secrets and variables** → **Actions**:
-
-| Secret | Purpose | Required |
-|--------|---------|----------|
-| `GH_TOKEN` | Repository automation | For branch protection & full automation |
-| `ANTHROPIC_API_KEY` | AI-enhanced PR descriptions | Optional but recommended |
-
-### 4. Start Using
-
-- **Daily sync** happens automatically at midnight UTC
-- **Manual sync** available in Actions → "Upstream Synchronization"  
-- **Conflicts** create detailed issues with resolution guidance
-- **Releases** are automatically versioned and correlated with upstream
-
-## Support and Contributing
-
-📚 **[Complete Documentation](https://danielscholl-osdu.github.io/osdu-fork-template/)** - Comprehensive guides covering system concepts, architecture, workflows, and AI integration.
-
-- **Issues**: [Report bugs or request features](https://github.com/danielscholl-osdu/osdu-fork-template/issues)
-- **Discussions**: [Community support and questions](https://github.com/danielscholl-osdu/osdu-fork-template/discussions)
-- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines
-- **Security**: Report security issues privately via [GitHub security advisories](https://github.com/danielscholl-osdu/osdu-fork-template/security/advisories)
-
-## License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
----
-
-**Need help?** Check the [documentation](https://danielscholl-osdu.github.io/osdu-fork-template/) or [open an issue](https://github.com/danielscholl-osdu/osdu-fork-template/issues/new).
+#### Server Url(full path vs relative path) configuration
+- `api.server.fullUrl.enabled=true` It will generate full server url in the OpenAPI swagger
+- `api.server.fullUrl.enabled=false` It will generate only the contextPath only
+- default value is false (Currently only in Azure it is enabled)
+[Reference]:(https://springdoc.org/faq.html#_how_is_server_url_generated) 
