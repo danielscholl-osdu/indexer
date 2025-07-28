@@ -281,7 +281,8 @@ public class TypeMapper {
                         "store": true,
                         "fields": {
                             "autocomplete": {
-                                "type": "completion"
+                                "type": "completion",
+                                "analyzer": "standard"
                             }
                         }
                     }
