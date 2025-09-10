@@ -473,6 +473,61 @@ public class IndexerServiceImplTest {
         return indexSchema;
     }
 
+    @Test
+    public void testGetIndexerPayload_ShouldDeduplicateSchemas() {
+        // Setup: Create multiple records with same kind
+        Map<String, Map<String, OperationType>> upsertRecordMap = new HashMap<>();
+        Map<String, OperationType> operations = new HashMap<>();
+        operations.put("record1", OperationType.create);
+        operations.put("record2", OperationType.create);
+        upsertRecordMap.put("test:kind:1.0.0", operations);
+        
+        // Create schema map with one schema for the kind
+        IndexSchema testSchema = IndexSchema.builder()
+            .kind("test:kind:1.0.0")
+            .dataSchema(new HashMap<>())
+            .metaSchema(new HashMap<>())
+            .build();
+        
+        Map<String, IndexSchema> kindSchemaMap = new HashMap<>();
+        kindSchemaMap.put("test:kind:1.0.0", testSchema);
+        
+        // Create records with same kind
+        Records.Entity record1 = new Records.Entity();
+        record1.setId("record1");
+        record1.setKind("test:kind:1.0.0");
+        record1.setData(new HashMap<>());
+        
+        Records.Entity record2 = new Records.Entity();
+        record2.setId("record2");
+        record2.setKind("test:kind:1.0.0");
+        record2.setData(new HashMap<>());
+        
+        Records records = Records.builder()
+            .records(Arrays.asList(record1, record2))
+            .build();
+        
+        // Mock feature flag to be disabled for simplicity
+        when(asIngestedCoordinatesFeatureFlag.isFeatureEnabled(anyString())).thenReturn(false);
+        
+        // Execute via reflection since getIndexerPayload is private
+        try {
+            java.lang.reflect.Method method = sut.getClass().getDeclaredMethod("getIndexerPayload", 
+                Map.class, Map.class, Records.class);
+            method.setAccessible(true);
+            
+            RecordIndexerPayload result = (RecordIndexerPayload) method.invoke(sut, upsertRecordMap, kindSchemaMap, records);
+            
+            // Verify: Should have 2 records but only 1 unique schema
+            assertEquals("Should have 2 records", 2, result.getRecords().size());
+            assertEquals("Should have only 1 unique schema", 1, result.getSchemas().size());
+            assertEquals("Schema should be the correct one", testSchema, result.getSchemas().get(0));
+            
+        } catch (Exception e) {
+            fail("Test failed due to reflection error: " + e.getMessage());
+        }
+    }
+
     private Map<String, Object> createSchema() {
         Map<String, Object> schema = new HashMap<>();
         schema.put("schema1", "keyword");

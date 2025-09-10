@@ -33,10 +33,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
@@ -371,7 +373,7 @@ public class IndexerServiceImpl implements IndexerService {
     private RecordIndexerPayload getIndexerPayload(Map<String, Map<String, OperationType>> upsertRecordMap, Map<String, IndexSchema> kindSchemaMap, Records records) {
         List<Records.Entity> storageValidRecords = records.getRecords();
         List<RecordIndexerPayload.Record> indexerPayload = new ArrayList<>();
-        List<IndexSchema> schemas = new ArrayList<>();
+        Set<IndexSchema> schemasSet = new LinkedHashSet<>();
 
         for (Records.Entity storageRecord : storageValidRecords) {
 
@@ -392,7 +394,7 @@ public class IndexerServiceImpl implements IndexerService {
                 asIngestedCoordinatesPaths = findAsIngestedCoordinatesPaths(storageRecord.getData(), "");
                 addAsIngestedCoordinatesFieldsToSchema(schema, asIngestedCoordinatesPaths);
             }
-            schemas.add(schema);
+            schemasSet.add(schema);
 
             // skip indexing of records if data block is empty
             RecordIndexerPayload.Record document = prepareIndexerPayload(schema, storageRecord, idOperationMap, asIngestedCoordinatesPaths);
@@ -406,7 +408,7 @@ public class IndexerServiceImpl implements IndexerService {
             throw new AppException(RequestStatus.STORAGE_CONFLICT, "Indexer error", "upsert record failed, storage service returned incorrect records");
         }
 
-        return RecordIndexerPayload.builder().records(indexerPayload).schemas(schemas).build();
+        return RecordIndexerPayload.builder().records(indexerPayload).schemas(new ArrayList<>(schemasSet)).build();
     }
 
     private ArrayList<String> findAsIngestedCoordinatesPaths(Map<String, Object> dataMap, String path) {
