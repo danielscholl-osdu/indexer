@@ -26,6 +26,8 @@ import java.io.Serializable;
 
 @Getter
 @NoArgsConstructor
+@EqualsAndHashCode
+@ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonDeserialize(using = PositionDeserializer.class)
 @JsonSerialize(using = PositionSerializer.class)

@@ -15,11 +15,11 @@
 package org.opengroup.osdu.indexer.model.geojson;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.NoArgsConstructor;
-import org.opengroup.osdu.indexer.model.geojson.jackson.GeoJsonConstants;
-
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Arrays;
 import java.util.List;
+import lombok.NoArgsConstructor;
+import org.opengroup.osdu.indexer.model.geojson.jackson.GeoJsonConstants;
 
 @NoArgsConstructor
 public class Polygon extends Geometry<List<Position>> {
@@ -72,8 +72,38 @@ public class Polygon extends Geometry<List<Position>> {
         coordinates.add(Arrays.asList(points));
     }
 
+    @Override
+    @JsonDeserialize
+    public void setCoordinates(List<List<Position>> coordinates) {
+        assertClosedPolygon(coordinates);
+        super.setCoordinates(coordinates);
+    }
+
     private void assertExteriorRing() {
         if (coordinates.isEmpty())
             throw new RuntimeException("No exterior ring defined");
+    }
+
+    private void assertClosedPolygon(List<List<Position>> coordinates) {
+        for (List<Position> ring : coordinates) {
+            if (ring == null || ring.size() < 4) {
+                throw new IllegalArgumentException(
+                    "Invalid polygon ring. A linear ring must contain at least 4 positions.");
+            }
+
+            Position first = ring.get(0);
+            Position last = ring.get(ring.size() - 1);
+            // Comparison without tolerance using Double.compare in Position.equals,
+            // because Elasticsearch requires the first and last coordinates in a linear ring
+            // to be exactly equal, not “almost equal”.
+            if (!first.equals(last)) {
+                throw new IllegalArgumentException(
+                    String.format(
+                        "Polygon is not closed. First point = [%s] and last point = [%s] must be the same.",
+                        first, last
+                    )
+                );
+            }
+        }
     }
 }
