@@ -57,19 +57,19 @@ public class GeoShapeParserTest {
     @Test
     public void should_throwException_parseInvalidPoint() {
         String shapeJson = getGeoShapeFromFile("input/invalid_point.json");
-        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "unable to parse FeatureCollection");
+        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "'longitude' value is out of the range [-180, 180]");
     }
 
     @Test
     public void should_throwException_parseInvalidPoint_NaN() {
         String shapeJson = getGeoShapeFromFile("input/invalid_point_nan.json");
-        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "unable to parse FeatureCollection");
+        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "'longitude' value is out of the range [-180, 180]");
     }
 
     @Test
     public void should_throwException_parseInvalidPoint_missingLatitude() {
         String shapeJson = getGeoShapeFromFile("input/invalid_point_missing_latitude.json");
-        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "unable to parse FeatureCollection");
+        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "Unexpected end-of-input when binding data into Position");
     }
 
     @Test
@@ -82,6 +82,12 @@ public class GeoShapeParserTest {
     public void should_throwException_parseInvalidShape() {
         String shapeJson = getGeoShapeFromFile("input/invalid_shape.json");
         this.validateInput(this.sut::parseGeoJson, shapeJson, "", "must be a valid FeatureCollection");
+    }
+
+    @Test
+    public void should_throwException_crossingDateLineMultipolygon(){
+        String shapeJson = getGeoShapeFromFile("input/multi_polygon_crossing_dateline.json");
+        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "Polygon crosses the dateline: minLon=-180.00, maxLon=180.00");
     }
 
     @Test
@@ -129,7 +135,7 @@ public class GeoShapeParserTest {
     @Test
     public void should_throwException_parseInvalidPolygon_malformedLatitude() {
         String shapeJson = getGeoShapeFromFile("input/invalid_polygon_malformed_latitude.json");
-        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "unable to parse FeatureCollection");
+        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "Unexpected token (VALUE_STRING) when binding data into Position");
     }
 
     @Test

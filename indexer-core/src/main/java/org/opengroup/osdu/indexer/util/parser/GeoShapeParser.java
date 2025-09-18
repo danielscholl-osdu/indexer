@@ -43,10 +43,8 @@ public class GeoShapeParser {
             });
         } catch (InvalidTypeIdException e) {
             throw new IllegalArgumentException("must be a valid FeatureCollection");
-        } catch (JsonParseException e){
-            throw new IllegalArgumentException(e.getMessage());
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("unable to parse FeatureCollection");
+        } catch (JsonProcessingException e){
+            throw new IllegalArgumentException(e.getOriginalMessage());
         }
     }
 }
