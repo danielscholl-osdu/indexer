@@ -15,7 +15,7 @@
 package org.opengroup.osdu.indexer.model.geojson;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import java.util.Arrays;
 import java.util.List;
 import lombok.NoArgsConstructor;
@@ -73,7 +73,7 @@ public class Polygon extends Geometry<List<Position>> {
     }
 
     @Override
-    @JsonDeserialize
+    @JsonSetter
     public void setCoordinates(List<List<Position>> coordinates) {
         assertClosedPolygon(coordinates);
         super.setCoordinates(coordinates);
