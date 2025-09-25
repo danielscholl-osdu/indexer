@@ -35,11 +35,35 @@ public class MultiPolygon extends Geometry<List<List<Position>>> {
     @Override
     @JsonDeserialize(using = MultiPolygonDeserializer.class)
     public void setCoordinates(List<List<List<Position>>> coordinates) {
+        assertDateLineCrossing(coordinates);
         super.setCoordinates(coordinates);
     }
 
     @Override
     public String getType() {
         return GeoJsonConstants.MULTI_POLYGON;
+    }
+
+    private void assertDateLineCrossing(List<List<List<Position>>> coordinates) {
+        for (List<List<Position>> polygon : coordinates) {
+            double minLon = Double.POSITIVE_INFINITY;
+            double maxLon = Double.NEGATIVE_INFINITY;
+            for (List<Position> ring : polygon) {
+                for (Position pos : ring) {
+                    double lon = pos.getLongitude();
+                    if (lon < minLon) {
+                        minLon = lon;
+                    }
+                    if (lon > maxLon) {
+                        maxLon = lon;
+                    }
+                }
+            }
+            // If span > 180°, the polygon crosses the antimeridian
+            if ((maxLon - minLon) > 180.0) {
+                throw new IllegalArgumentException(
+                    "Polygon crosses the dateline: minLon=%.2f, maxLon=%.2f".formatted(minLon, maxLon));
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ gc-acceptance-test:
     ELASTIC_8_USER_NAME: $GC_ELASTIC_8_USER_NAME
     ELASTIC_8_PASSWORD: $GC_ELASTIC_8_PASSWORD
     ELASTIC_8_HOST: $GC_ELASTIC_8_HOST
+    SCHEMA_HOST: "https://${GC_DOMAIN}"
 
 gc-dev2-test:
   variables:
