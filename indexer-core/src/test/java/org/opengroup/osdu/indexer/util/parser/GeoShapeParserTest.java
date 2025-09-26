@@ -139,6 +139,19 @@ public class GeoShapeParserTest {
     }
 
     @Test
+    public void should_throwException_parseInvalidPolygon_unclosedPolygonRing() {
+        String shapeJson = getGeoShapeFromFile("input/invalid_polygon_unclosed_polygon_ring.json");
+        this.validateInput(this.sut::parseGeoJson, shapeJson, "", "Polygon is not closed. First point = [Position(longitude=1.823767235, latitude=58.4294699, altitude=NaN)] and last point = [Position(longitude=1.823767236, latitude=58.4294699, altitude=NaN)] must be the same.");
+    }
+
+    @Test
+    public void should_throwException_parseInvalidPolygon_invalidRing() {
+        String shapeJson = getGeoShapeFromFile("input/invalid_polygon_invalid_ring.json");
+        this.validateInput(this.sut::parseGeoJson, shapeJson, "",
+            "Invalid polygon ring. A linear ring must contain at least 4 positions.");
+    }
+
+    @Test
     public void should_parseValidMultiPolygon() {
         String shapeJson = getGeoShapeFromFile("input/valid_multi_polygon.json");
         String expectedParsedShape = getGeoShapeFromFile("expected/valid_multi_polygon.json");
