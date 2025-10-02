@@ -30,12 +30,12 @@
     <description>Indexer Service IBM</description>
     <packaging>jar</packaging>
 
-	<properties>
+    <properties>
         <os-core-lib-ibm.version>0.26.0-rc8</os-core-lib-ibm.version>
-        <os-core-common.version>3.5.0</os-core-common.version>
-    </properties>
-
-	<profiles>
+        <os-core-common.version>3.6.1</os-core-common.version>
+    </properties>	
+    
+    <profiles>
 		<profile>
 			<id>local</id>
 			<activation>

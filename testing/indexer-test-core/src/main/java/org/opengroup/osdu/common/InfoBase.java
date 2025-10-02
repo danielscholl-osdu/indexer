@@ -3,6 +3,7 @@ package org.opengroup.osdu.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
@@ -18,6 +19,9 @@ import org.opengroup.osdu.util.HTTPClient;
 
 @Slf4j
 public class InfoBase extends TestsBase {
+
+  // Feature flag property constant - matches the value used in FeatureConstants
+  private static final String EXPOSE_FEATUREFLAG_ENABLED_PROPERTY = "expose_featureflag.enabled";
 
   private static final List<String> expectedFeatureFlags = List.of(
       "featureFlag.mapBooleanToString.enabled",
@@ -81,13 +85,27 @@ public class InfoBase extends TestsBase {
       assertNotNull(response.getCommitId());
       assertNotNull(response.getCommitMessage());
       List<FeatureFlagStateMock> featureFlagStates = response.getFeatureFlagStates();
-      assertNotNull(featureFlagStates);
-      assertFalse(featureFlagStates.isEmpty());
 
-      for (String ffName : expectedFeatureFlags){
-        assertTrue(featureFlagStates.stream().anyMatch(ffState -> ffState.getName().equals(ffName)));
+      // Read the actual configuration property value to validate behavior alignment
+      // Check system property first, then fall back to environment variable
+      String featureFlagExposeEnabledProperty = System.getProperty(EXPOSE_FEATUREFLAG_ENABLED_PROPERTY);
+      if (featureFlagExposeEnabledProperty == null) {
+          featureFlagExposeEnabledProperty = System.getenv("EXPOSE_FEATUREFLAG_ENABLED");
       }
-
+      boolean isFeatureFlagExposureEnabled = featureFlagExposeEnabledProperty == null || !"false".equalsIgnoreCase(featureFlagExposeEnabledProperty);
+      
+      if (!isFeatureFlagExposureEnabled)
+      {
+        assertNull(featureFlagStates);
+      }
+      else
+      {
+        assertNotNull(featureFlagStates);
+        assertFalse(featureFlagStates.isEmpty());
+        for (String ffName : expectedFeatureFlags){
+          assertTrue(featureFlagStates.stream().anyMatch(ffState -> ffState.getName().equals(ffName)));    
+        }    
+      }
     } else {
       log.warn("Version info endpoint provided null response");
     }

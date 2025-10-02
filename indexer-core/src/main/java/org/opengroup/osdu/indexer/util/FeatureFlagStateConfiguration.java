@@ -33,12 +33,15 @@ import org.opengroup.osdu.core.common.model.info.FeatureFlagStateResolver;
 import org.opengroup.osdu.core.common.model.info.FeatureFlagStateResolver.FeatureFlagState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.multitenancy.ITenantInfoService;
+import org.opengroup.osdu.indexer.config.FeatureConstants;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(value = FeatureConstants.EXPOSE_FEATUREFLAG_ENABLED_PROPERTY, havingValue = "true", matchIfMissing = true)
 public class FeatureFlagStateConfiguration {
 
   private final AugmenterSetting augmenterSetting;
