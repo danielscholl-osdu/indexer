@@ -1,38 +1,33 @@
-# OSDU Azure Service Provider Interface
+# Documentation Home
 
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/azure/osdu-spi/badge)](https://scorecard.dev/viewer/?uri=github.com/azure/osdu-spi)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+Official Documentation home at [https://osdu.pages.opengroup.org/platform/system/indexer-service/](https://osdu.pages.opengroup.org/platform/system/indexer-service/)
 
-> [!IMPORTANT]
-> This is the central engineering system and platform home that manages all OSDU Azure service implementations. It provides documentation, automated workflows, CI/CD pipelines, and synchronization mechanisms that keep Azure's OSDU services aligned with upstream OSDU standards while enabling Azure-specific interface development.
+# Introduction 
 
-## OSDU Repositories
+os-indexer-azure is a [Spring Boot](https://spring.io/projects/spring-boot) service that is responsible for indexing Records that enable the `os-search` service to execute OSDU R2 domain searches against Elasticsearch.
 
-This engineering system manages the following Azure OSDU service implementations:
+## Azure Implementation
 
-### Core Services
-- [Partition Service](https://github.com/azure/osdu-partition) - Data partition management and isolation
-- [Entitlements Service](https://github.com/azure/osdu-entitlements) - Access control and permissions
-- [Legal Service](https://github.com/azure/osdu-legal) - Legal tag management and compliance
-- [Schema Service](https://github.com/azure/osdu-schema) - Data model and schema management
-- [File Service](https://github.com/azure/osdu-file) - File storage and retrieval
-- [Storage Service](https://github.com/azure/osdu-storage) - Data persistence and management
-- [Indexer Service](https://github.com/azure/osdu-indexer) - Data indexing pipeline
-- [Search Service](https://github.com/azure/osdu-search) - Elasticsearch integration
+The [os-indexer-azure README.md](./provider/indexer-azure/README.md) has all the information needed to get started
+running the `os-indexer` Azure implementation
 
+## Google Cloud Implementation
 
-## Contributing
+All documentation for the Google Cloud implementation of `os-indexer` lives [here](./provider/indexer-gc/README.md)
 
-Only Microsoft employees can be be contributors for the OSDU SPI services at this time. 
+## AWS Implementation
 
-## License
+All documentation for the AWS implementation of `os-indexer` lives [here](./provider/indexer-aws/README.md)
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+## Open API 3.0 - Swagger
+- Swagger UI : https://host/context-path/swagger (will redirect to https://host/context-path/swagger-ui/index.html)
+- api-docs (JSON) : https://host/context-path/api-docs
+- api-docs (YAML) : https://host/context-path/api-docs.yaml
 
----
+All the Swagger and OpenAPI related common properties are managed here [swagger.properties](./indexer-core/src/main/resources/swagger.properties)
 
-<div align="center">
-
-[OSDU Website](https://osduforum.org/) • [Azure OSDU SPI](https://azure.github.io/osdu-spi) • [The Open Group](https://www.opengroup.org/)
-
-</div>
+#### Server Url(full path vs relative path) configuration
+- `api.server.fullUrl.enabled=true` It will generate full server url in the OpenAPI swagger
+- `api.server.fullUrl.enabled=false` It will generate only the contextPath only
+- default value is false (Currently only in Azure it is enabled)
+[Reference]:(https://springdoc.org/faq.html#_how_is_server_url_generated) 
