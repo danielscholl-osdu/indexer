@@ -46,4 +46,18 @@ public class ThreadScopeContextHolder {
             return accessor;
         }
     }
+
+    /**
+     * Removes the ThreadLocal variable to prevent memory leaks.
+     * This method properly cleans up the thread scope by first clearing any registered
+     * destruction callbacks and then removing the ThreadLocal variable.
+     * This method should be called when the thread scope is no longer needed.
+     */
+    public static void removeThreadScopeAttributes() {
+        ThreadScopeAttributes attributes = threadScopeAttributesHolder.get();
+        if (attributes != null) {
+            attributes.clear();
+        }
+        threadScopeAttributesHolder.remove();
+    }
 }

@@ -78,7 +78,7 @@ public abstract class IndexerOqmMessageReceiver implements OqmMessageReceiver {
             throw e;
         } finally {
             // Cleaning thread context after processing is finished and the thread dies out.
-            ThreadScopeContextHolder.currentThreadScopeAttributes().clear();
+            ThreadScopeContextHolder.removeThreadScopeAttributes();
         }
     }
 
