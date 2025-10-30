@@ -19,7 +19,7 @@
         <reactor-netty.version>0.8.20.RELEASE</reactor-netty.version>
         <woodstox-core.version>6.4.0</woodstox-core.version>
         <log4j2.version>2.21.1</log4j2.version>
-        <spring-boot-maven-plugin.version>3.3.4</spring-boot-maven-plugin.version>
+        <spring-boot-maven-plugin.version>3.5.7</spring-boot-maven-plugin.version>
         <json-smart.version>2.5.0</json-smart.version>
         <openapi.version>2.6.0</openapi.version>
         <spring.boot.version>3.3.11</spring.boot.version>
@@ -100,7 +100,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.34</version>
+            <version>1.18.42</version>
             <scope>provided</scope>
         </dependency>
         <!--OpenApi -->
