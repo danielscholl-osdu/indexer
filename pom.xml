@@ -14,17 +14,17 @@
         <maven.compiler.source>17</maven.compiler.source>
         <os-core-common.version>3.6.1</os-core-common.version>
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
-        <common-codec.version>1.14</common-codec.version>
+        <common-codec.version>1.19.0</common-codec.version>
         <netty.version>4.1.51.Final</netty.version>
-        <reactor-netty.version>0.8.20.RELEASE</reactor-netty.version>
-        <woodstox-core.version>6.4.0</woodstox-core.version>
+        <reactor-netty.version>1.2.11</reactor-netty.version>
+        <woodstox-core.version>7.1.1</woodstox-core.version>
         <log4j2.version>2.21.1</log4j2.version>
         <spring-boot-maven-plugin.version>3.3.4</spring-boot-maven-plugin.version>
-        <json-smart.version>2.5.0</json-smart.version>
-        <openapi.version>2.6.0</openapi.version>
-        <spring.boot.version>3.3.11</spring.boot.version>
-        <spring.framework.version>6.1.16</spring.framework.version>
-        <spring.security.version>6.3.4</spring.security.version>
+        <json-smart.version>2.6.0</json-smart.version>
+        <openapi.version>2.8.13</openapi.version>
+        <spring.boot.version>3.5.7</spring.boot.version>
+        <spring.framework.version>6.2.12</spring.framework.version>
+        <spring.security.version>6.5.6</spring.security.version>
     </properties>
 
     <licenses>
@@ -90,17 +90,17 @@
         <dependency>
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
-            <version>8.15.2</version>
+            <version>9.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>8.15.2</version>
+            <version>9.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.34</version>
+            <version>1.18.42</version>
             <scope>provided</scope>
         </dependency>
         <!--OpenApi -->
@@ -220,7 +220,7 @@
             <plugin>
                 <groupId>io.github.git-commit-id</groupId>
                 <artifactId>git-commit-id-maven-plugin</artifactId>
-                <version>8.0.2</version>
+                <version>9.0.2</version>
                 <executions>
                     <execution>
                         <goals>
@@ -240,7 +240,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
+                <version>0.8.14</version>
                 <executions>
                 <execution>
                     <goals>
