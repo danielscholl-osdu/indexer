@@ -23,7 +23,7 @@
         <json-smart.version>2.5.0</json-smart.version>
         <openapi.version>2.6.0</openapi.version>
         <spring.boot.version>3.3.11</spring.boot.version>
-        <spring.framework.version>6.1.16</spring.framework.version>
+        <spring.framework.version>6.2.12</spring.framework.version>
         <spring.security.version>6.3.4</spring.security.version>
     </properties>
 
