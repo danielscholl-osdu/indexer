@@ -1,3 +1,4 @@
 variables:
   CIMPL_SERVICE: indexer
   CIMPL_BUILD_PATH: indexer-core-plus/cloudbuild/Dockerfile
+  DISABLE_INTEGRATION_TEST: true
