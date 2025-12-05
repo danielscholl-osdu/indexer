@@ -60,6 +60,7 @@ public class TenantSubscriberConfiguration {
   void postConstruct() {
     log.info("OqmSubscriberManager provisioning STARTED");
     String recordsChangedTopicName = properties.getRecordsChangedTopicName();
+    String recordsChangedTopicNameV2 = properties.getRecordsChangedTopicNameV2();
     String schemaChangedTopicName = properties.getSchemaChangedTopicName();
     String reprocessTopicName = properties.getReprocessTopicName();
     String reindexTopicName = properties.getReindexTopicName();
@@ -70,6 +71,13 @@ public class TenantSubscriberConfiguration {
           dataPartitionId,
           recordsChangedTopicName,
           getSubscriptionName(recordsChangedTopicName),
+          new RecordsChangedMessageReceiver(headers, tokenProvider, recordIndexerApi),
+          OqmSubscriberThroughput.MAX
+      );
+      subscriberManager.registerSubscriber(
+          dataPartitionId,
+          recordsChangedTopicNameV2,
+          getSubscriptionName(recordsChangedTopicNameV2),
           new RecordsChangedMessageReceiver(headers, tokenProvider, recordIndexerApi),
           OqmSubscriberThroughput.MAX
       );
