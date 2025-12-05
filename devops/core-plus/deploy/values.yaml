@@ -7,7 +7,10 @@ global:
   limitsEnabled: true
 
 # This flag enables configuration specific to ROSA environments.
-rosa: false 
+rosa: false
+featureFlag:
+  xCollaboration:
+    enabled=true
 
 data:
   # Configmap
