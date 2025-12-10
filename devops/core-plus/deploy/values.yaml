@@ -8,9 +8,6 @@ global:
 
 # This flag enables configuration specific to ROSA environments.
 rosa: false
-featureFlag:
-  xCollaboration:
-    enabled=true
 
 data:
   # Configmap
@@ -20,6 +17,9 @@ data:
   schemaHost: "http://schema"
   securityHttpsCertificateTrust: "true"
   storageHost: "http://storage"
+  collaborationsEnabled: true
+  # PubSub topic configuration
+  pubsubSearchTopicV2: "records-changed-v2"
   # Deployment
   requestsCpu: "35m"
   requestsMemory: "640Mi"
