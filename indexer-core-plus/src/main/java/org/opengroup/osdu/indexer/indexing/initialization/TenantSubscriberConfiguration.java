@@ -76,13 +76,6 @@ public class TenantSubscriberConfiguration {
       );
       subscriberManager.registerSubscriber(
           dataPartitionId,
-          recordsChangedTopicNameV2,
-          getSubscriptionName(recordsChangedTopicNameV2),
-          new RecordsChangedMessageReceiver(headers, tokenProvider, recordIndexerApi),
-          OqmSubscriberThroughput.MAX
-      );
-      subscriberManager.registerSubscriber(
-          dataPartitionId,
           schemaChangedTopicName,
           getSubscriptionName(schemaChangedTopicName),
           new SchemaChangedMessageReceiver(headers, tokenProvider, recordIndexerApi),
@@ -100,6 +93,13 @@ public class TenantSubscriberConfiguration {
           reindexTopicName,
           getSubscriptionName(reindexTopicName),
           new ReindexMessageReceiver(headers, tokenProvider, recordIndexerApi),
+          OqmSubscriberThroughput.MAX
+      );
+      subscriberManager.registerSubscriber(
+          dataPartitionId,
+          recordsChangedTopicNameV2,
+          getSubscriptionName(recordsChangedTopicNameV2),
+          new RecordsChangedMessageReceiver(headers, tokenProvider, recordIndexerApi),
           OqmSubscriberThroughput.MAX
       );
     }
