@@ -43,6 +43,9 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/gitlab-ultimate.yml"
+    
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "reporting/reporting.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/aws-global.yml"
