@@ -32,6 +32,7 @@
       <deployment.environment>dev</deployment.environment>
       <mockito.version>3.11.2</mockito.version>
       <netty.version>4.1.124.Final</netty.version>
+      <tomcat-core.version>10.1.48</tomcat-core.version>
   </properties>
 
   <dependencyManagement>
@@ -51,7 +52,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>10.1.44</version>
+            <version>${tomcat-core.version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
