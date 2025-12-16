@@ -46,6 +46,9 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "reporting/reporting.yml"
+    
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "reporting/reporting.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/aws-global.yml"
@@ -80,7 +83,6 @@ include:
   - local: "devops/gc/pipeline/override-stages.yml"
   - local: "devops/aws/pipeline/override-stages.yml"
   - local: "devops/core-plus/pipeline/override-stages.yml"
-  - local: "/publish.yml"
 
 download_plugins:
   image: maven:3.8.3-openjdk-17-slim
