@@ -29,6 +29,7 @@ import jakarta.inject.Inject;
 import org.opengroup.osdu.core.common.Constants;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.indexer.ElasticType;
 import org.opengroup.osdu.core.common.model.indexer.IndexSchema;
 import org.opengroup.osdu.core.common.model.search.RecordMetaAttribute;
 import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
@@ -132,6 +133,11 @@ public class IndexerMappingServiceImpl extends MappingServiceImpl implements IMa
 
             // data & meta block
             properties.put(Constants.DATA, dataProperties);
+
+            // Add collaborationId if feature enabled and header exists
+            if (xcollaborationHolder.isFeatureEnabledAndHeaderExists()){
+                properties.put(X_COLLABORATION, TypeMapper.getMetaAttributeIndexerMapping(X_COLLABORATION, null));
+            }
         }
         properties.putAll(metaMapping);
 
