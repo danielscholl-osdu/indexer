@@ -48,7 +48,7 @@ include:
     file: "reporting/reporting.yml"
     
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "reporting/reporting.yml"
+    file: "publishing/common-pages.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/aws-global.yml"
