@@ -17,6 +17,8 @@ data:
   schemaHost: "http://schema"
   securityHttpsCertificateTrust: "true"
   storageHost: "http://storage"
+  otelJavaagentEnabled: "true"
+  otelExporterEndpoint: "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4318"
   # Deployment
   requestsCpu: "100m"
   requestsMemory: "640Mi"

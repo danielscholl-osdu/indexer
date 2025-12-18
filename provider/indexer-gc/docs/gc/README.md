@@ -31,6 +31,8 @@ Defined in default application property file but possible to override:
 | `DEAD_LETTERING_ENABLED`           | ex `true` or `false`                     | Dead lettering configuration validation, if enabled, then service will require configured dead lettering in Pubsub. | no         | <https://console.cloud.google.com/cloudpubsub/topic/list>    |
 | `MANAGEMENT_ENDPOINTS_WEB_BASE`    | ex `/`                                   | Web base for Actuator                                                                                               | no         | -                                                            |
 | `MANAGEMENT_SERVER_PORT`           | ex `8081`                                | Port for Actuator                                                                                                   | no         | -                                                            |
+| `OTEL_JAVAAGENT_ENABLED`           | ex `true` or `false`                     | `true` - OpenTelemetry Java agent enabled, `false` - disabled                                                       | no         |                                                              |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`      | ex `http://127.0.0.1:4318`               | OpenTelemetry collector endpoint                                                                                    | no         |                                                              |
 
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.
@@ -204,6 +206,29 @@ Execute following command to build code and run all the integration tests:
 #       above are already exported in your environment.
 $ (cd testing/indexer-test-gc/ && mvn clean test)
 ```
+
+## Monitoring
+### OpenTelemetry Integration
+
+The opentelemetry-javaagent.jar file is the OpenTelemetry Java agent. It is used to
+automatically instrument the Java application at runtime, without requiring manual changes
+to the source code.
+
+This provides critical observability features:
+* Distributed Tracing: To trace the path of requests as they travel across different
+  services.
+* Metrics: To capture performance indicators and application-level metrics.
+* Logs: To correlate logs with traces and other telemetry data.
+
+Enabling this agent makes it significantly easier to monitor, debug, and manage the
+application in development and production environments. The agent is activated by the
+startup.sh script when the OTEL_JAVAAGENT_ENABLED environment variable is set to true.
+
+The agent is available from the official OpenTelemetry GitHub repository. It is
+recommended to use the latest stable version.
+
+Official Download Page:
+https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases
 
 ## License
 
