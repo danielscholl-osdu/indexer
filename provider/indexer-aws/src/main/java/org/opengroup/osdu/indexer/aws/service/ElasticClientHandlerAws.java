@@ -78,14 +78,16 @@ public class ElasticClientHandlerAws extends ElasticClientHandler {
             .setMaxConnPerRoute(getMaxConnPerRoute())
             .setConnectionTimeToLive(REST_CLIENT_CONNECTION_TTL_SECONDS, TimeUnit.SECONDS);
             
-        if ((isLocalHost(host) || disableSslCertificateTrust.booleanValue())) {
+        if ((isLocalHost(host) || disableSslCertificateTrust)) {
             SSLContext sslContext;            
             try {
                 sslContext = SSLContext.getInstance("TLS");
                 sslContext.init(null, new TrustManager[]{ UnsafeX509ExtendedTrustManager.INSTANCE }, null);
                 httpClientBuilder
                     .setSSLContext(sslContext)
-                    .setSSLHostnameVerifier((s, session) -> true);
+                    // Suppressed: java:S4830 - Hostname verification disabled for internal EKS cluster connections
+                    // This is controlled by aws.es.certificate.disableTrust configuration property
+                    .setSSLHostnameVerifier((s, session) -> true); // NOSONAR
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
                 log.severe(e.getMessage());
             }
