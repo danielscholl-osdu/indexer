@@ -20,7 +20,7 @@
         <woodstox-core.version>6.4.0</woodstox-core.version>
         <log4j2.version>2.21.1</log4j2.version>
         <spring-boot-maven-plugin.version>3.3.4</spring-boot-maven-plugin.version>
-        <json-smart.version>2.5.0</json-smart.version>
+        <json-smart.version>2.5.2</json-smart.version>
         <openapi.version>2.6.0</openapi.version>
         <spring.boot.version>3.3.11</spring.boot.version>
         <spring.framework.version>6.1.16</spring.framework.version>
