@@ -1,5 +1,4 @@
-FROM azul/zulu-openjdk:17
-
+FROM community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/gc-osdu-java-image/gc-osdu-java-17-base-master:latest
 WORKDIR /app
 
 ARG PROVIDER_NAME
@@ -16,18 +15,10 @@ COPY tmp-gc/gc-apd-acc-*.jar gc/apd-acc.jar
 # Copy the jar to the production image from the builder stage.
 COPY provider/indexer-${PROVIDER_NAME}/target/indexer-${PROVIDER_NAME}-*-spring-boot.jar indexer-${PROVIDER_NAME}.jar
 
-# Add a non-root user
-RUN groupadd -g 10001 -r nonroot \
-  && useradd -g 10001 -r -u 10001 nonroot
-
-# Run as non-root user
-USER 10001:10001
+# Set Java options using COMMON_JAVA_FLAGS from base image plus service-specific options
+# Base image entrypoint will inject telemetry if OTEL_JAVAAGENT_ENABLED=true
+ENV JAVA_OPTS="${COMMON_JAVA_FLAGS} -Dserver.port=${PORT} -Dloader.main=org.opengroup.osdu.indexer.provider.gcp.IndexerGcpApplication"
 
 # Run the web service on container startup.
-#--add-opens args used to open modules and allow illegal(reflection\private classes and fields) access from the code.
-CMD java --add-opens java.base/java.lang=ALL-UNNAMED \
-    --add-opens java.base/java.lang.reflect=ALL-UNNAMED \
-    -Djava.security.egd=indexer:/dev/./urandom -Dserver.port=${PORT} \
-    -Dlog4j.formatMsgNoLookups=true \
-    -Dloader.main=org.opengroup.osdu.indexer.provider.gcp.IndexerGcpApplication \
-    -jar /app/indexer-${PROVIDER_NAME}.jar
+# Base image entrypoint will intercept 'java' command and inject JAVA_OPTS automatically
+CMD java $JAVA_OPTS -jar /app/indexer-${PROVIDER_NAME}.jar
