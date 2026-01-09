@@ -77,7 +77,7 @@ public class ReindexApi {
             @ApiResponse(responseCode = "502", description = "Bad Gateway",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "503", description = "Service Unavailable",  content = {@Content(schema = @Schema(implementation = AppError.class))})
     })
-//    @PreAuthorize("@authorizationFilter.hasPermission('" + SearchServiceRole.ADMIN + "')")
+    @PreAuthorize("@authorizationFilter.hasPermission('" + SearchServiceRole.ADMIN + "')")
     @PostMapping(path = "/records", consumes = "application/json")
     public ResponseEntity<?> reindexRecords(
             @NotNull @Valid @RequestBody ReindexRecordsRequest reindexRecordsRequest) {
@@ -101,7 +101,7 @@ public class ReindexApi {
             @ApiResponse(responseCode = "502", description = "Bad Gateway",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "503", description = "Service Unavailable",  content = {@Content(schema = @Schema(implementation = AppError.class))})
     })
-//    @PreAuthorize("@authorizationFilter.hasPermission('" + SearchServiceRole.ADMIN + "')")
+    @PreAuthorize("@authorizationFilter.hasPermission('" + SearchServiceRole.ADMIN + "')")
     @PostMapping
     public ResponseEntity<?> reindex(@NotNull @Valid @RequestBody RecordReindexRequest recordReindexRequest,
                                      @Parameter(description = "Force Clean")
@@ -123,7 +123,7 @@ public class ReindexApi {
             @ApiResponse(responseCode = "502", description = "Bad Gateway",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "503", description = "Service Unavailable",  content = {@Content(schema = @Schema(implementation = AppError.class))})
     })
-//    @PreAuthorize("@authorizationFilter.hasPermission('" + Role.USER_OPS + "')")
+    @PreAuthorize("@authorizationFilter.hasPermission('" + Role.USER_OPS + "')")
     @PatchMapping
     public ResponseEntity<String> fullReindex( @Parameter(description = "Force Clean")
             @RequestParam(value = "force_clean", defaultValue = "false") boolean forceClean) throws IOException {
