@@ -77,6 +77,7 @@ import org.opengroup.osdu.indexer.model.SearchRecord;
 import org.opengroup.osdu.indexer.model.indexproperty.AugmenterConfiguration;
 import org.opengroup.osdu.indexer.util.IndexerQueueTaskBuilder;
 import org.opengroup.osdu.indexer.util.SearchClient;
+import org.opengroup.osdu.indexer.util.function.AugmenterFunctionFactory;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -114,6 +115,8 @@ public class AugmenterConfigurationServiceImplTest {
     private JaxRsDpsLog jaxRsDpsLog;
     @Mock
     private JobStatus jobStatus;
+    @Mock
+    private AugmenterFunctionFactory augmenterFunctionFactory;
 
     private final String augmenterConfigurationKind = "osdu:wks:reference-data--IndexPropertyPathConfiguration:*";
     private String childKind;
