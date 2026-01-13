@@ -22,7 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
-import org.apache.commons.collections.CollectionUtils;
+import org.springframework.util.CollectionUtils;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -43,6 +43,8 @@ import org.opengroup.osdu.indexer.util.QueryUtil;
 import org.opengroup.osdu.indexer.util.IndexerQueueTaskBuilder;
 import org.opengroup.osdu.indexer.util.PropertyUtil;
 import org.opengroup.osdu.indexer.util.SearchClient;
+import org.opengroup.osdu.indexer.util.function.AugmenterFunctionFactory;
+import org.opengroup.osdu.indexer.util.function.IAugmenterFunction;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -103,6 +105,8 @@ public class AugmenterConfigurationServiceImpl implements AugmenterConfiguration
     private JobStatus jobStatus;
     @Inject
     private SearchClient searchClient;
+    @Inject
+    private AugmenterFunctionFactory augmenterFunctionFactory;
 
     @Value("${augmenter.extended_list_value.max_size:2000}")
     int maxSizeOfExtendedListValue;
@@ -582,6 +586,11 @@ public class AugmenterConfigurationServiceImpl implements AugmenterConfiguration
     }
 
     private List<SchemaItem> getExtendedSchemaItems(Schema schema, PropertyConfiguration configuration, PropertyPath propertyPath) {
+        if(augmenterFunctionFactory.isAugmenterFunction(propertyPath.getValueExtraction())) {
+            IAugmenterFunction augmenterFunction = augmenterFunctionFactory.getAugmenterFunction(propertyPath.getValueExtraction());
+            return augmenterFunction.getExtendedSchemaItems(configuration.getExtendedPropertyName());
+        }
+
         String relatedPropertyPath = PropertyUtil.removeDataPrefix(propertyPath.getValueExtraction().getValuePath());
         List<SchemaItem> extendedSchemaItems;
         if (relatedPropertyPath.contains(ARRAY_SYMBOL)) { // Nested
@@ -682,8 +691,21 @@ public class AugmenterConfigurationServiceImpl implements AugmenterConfiguration
     private Map<String, Object> getExtendedPropertyValues(String extendedPropertyName, Map<String, Object> dataMap, ValueExtraction valueExtraction, boolean isExtractFirstMatch) {
         if (dataMap == null || dataMap.isEmpty() || valueExtraction == null || !valueExtraction.isValid())
             return new HashMap<>();
-        Map<String, Object> propertyValues = getPropertyValues(dataMap, valueExtraction.getValuePath(), valueExtraction, valueExtraction.hasValidCondition(), isExtractFirstMatch);
-        return PropertyUtil.replacePropertyPaths(extendedPropertyName, valueExtraction.getValuePath(), propertyValues);
+
+        if(augmenterFunctionFactory.isAugmenterFunction(valueExtraction)) {
+            IAugmenterFunction augmenterFunction = augmenterFunctionFactory.getAugmenterFunction(valueExtraction);
+            Map<String, Object> propertyValues = new HashMap<>();
+            List<String> valuePaths = augmenterFunction.getValuePaths(valueExtraction);
+            for(String valuePath : valuePaths) {
+                Map<String, Object> propertyValue = getPropertyValues(dataMap, valuePath, valueExtraction, valueExtraction.hasValidCondition(), isExtractFirstMatch);
+                propertyValues.putAll(propertyValue);
+            }
+            return augmenterFunction.getPropertyValues(extendedPropertyName, valueExtraction, propertyValues);
+        }
+        else {
+            Map<String, Object> propertyValues = getPropertyValues(dataMap, valueExtraction.getValuePath(), valueExtraction, valueExtraction.hasValidCondition(), isExtractFirstMatch);
+            return PropertyUtil.replacePropertyPaths(extendedPropertyName, valueExtraction.getValuePath(), propertyValues);
+        }
     }
 
     private Map<String, Object> getPropertyValues(Map<String, Object> dataMap, String valuePath, RelatedCondition relatedCondition, boolean hasValidCondition, boolean isExtractFirstMatch) {

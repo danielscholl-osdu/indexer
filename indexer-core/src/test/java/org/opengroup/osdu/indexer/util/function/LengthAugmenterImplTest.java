@@ -1,0 +1,123 @@
+package org.opengroup.osdu.indexer.util.function;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.indexer.StorageType;
+import org.opengroup.osdu.core.common.model.storage.SchemaItem;
+import org.opengroup.osdu.indexer.model.indexproperty.ValueExtraction;
+
+import java.util.List;
+import java.util.Map;
+
+@RunWith(MockitoJUnitRunner.class)
+public class LengthAugmenterImplTest {
+    @InjectMocks
+    private LengthAugmenterImpl lengthAugmenter;
+
+    @Mock
+    private JaxRsDpsLog jaxRsDpsLog;
+
+    private ValueExtraction valueExtraction;
+    private Object shapeObject;
+
+    @Before
+    public void setup() throws JsonProcessingException {
+        valueExtraction = new ValueExtraction();
+        valueExtraction.setValuePath("Len(VirtualProperties.DefaultLocation.Wgs84Coordinates)");
+        String json = """
+                {
+                     "type": "geometrycollection",
+                     "geometries": [{
+                             "type": "linestring",
+                             "coordinates": [
+                                 [
+                                     -92.592,
+                                     28.1811
+                                 ],
+                                 [
+                                     -92.4696,
+                                     28.1834
+                                 ]
+                             ]
+                         }
+                     ]
+                 }
+                """;
+        ObjectMapper mapper = new ObjectMapper();
+        shapeObject = mapper.readValue(json, Object.class);
+    }
+
+
+    @Test
+    public void isMatched_return_true() {
+        Assertions.assertTrue(lengthAugmenter.isMatched(valueExtraction));
+
+        // with space
+        valueExtraction.setValuePath("Len ( VirtualProperties.DefaultLocation.Wgs84Coordinates )");
+
+        // lower case
+        valueExtraction.setValuePath("len(VirtualProperties.DefaultLocation.Wgs84Coordinates)");
+        Assertions.assertTrue(lengthAugmenter.isMatched(valueExtraction));
+
+        // upper case
+        valueExtraction.setValuePath("LEN(VirtualProperties.DefaultLocation.Wgs84Coordinates)");
+        Assertions.assertTrue(lengthAugmenter.isMatched(valueExtraction));
+    }
+
+    @Test
+    public void isMatched_return_false() {
+        valueExtraction.setValuePath("Length(VirtualProperties.DefaultLocation.Wgs84Coordinates)");
+        Assertions.assertFalse(lengthAugmenter.isMatched(valueExtraction));
+    }
+
+    @Test
+    public void getValuePath() {
+        List<String> valuePaths = lengthAugmenter.getValuePaths(valueExtraction);
+        Assertions.assertEquals(1, valuePaths.size());
+        Assertions.assertEquals("VirtualProperties.DefaultLocation.Wgs84Coordinates", valuePaths.get(0));
+
+        // with data. prefix
+        valueExtraction.setValuePath("Len(data.VirtualProperties.DefaultLocation.Wgs84Coordinates)");
+        valuePaths = lengthAugmenter.getValuePaths(valueExtraction);
+        Assertions.assertEquals(1, valuePaths.size());
+        Assertions.assertEquals("VirtualProperties.DefaultLocation.Wgs84Coordinates", valuePaths.get(0));
+
+        // with space
+        valueExtraction.setValuePath("len ( data.VirtualProperties.DefaultLocation.Wgs84Coordinates )");
+        valuePaths = lengthAugmenter.getValuePaths(valueExtraction);
+        Assertions.assertEquals(1, valuePaths.size());
+        Assertions.assertEquals("VirtualProperties.DefaultLocation.Wgs84Coordinates", valuePaths.get(0));
+    }
+
+    @Test
+    public void getExtendedSchemaItems() {
+        String extendedPropertyName = "Length";
+        List<SchemaItem> schemaItems = lengthAugmenter.getExtendedSchemaItems(extendedPropertyName);
+        Assertions.assertNotNull(schemaItems);
+        Assertions.assertEquals(1, schemaItems.size());
+
+        SchemaItem schemaItem = schemaItems.get(0);
+        Assertions.assertEquals(extendedPropertyName, schemaItem.getPath());
+        Assertions.assertEquals(StorageType.DOUBLE.getValue(), schemaItem.getKind());
+    }
+
+    @Test
+    public void getPropertyValues() {
+        String extendedPropertyName = "Length";
+        Map<String, Object> propertyValues = lengthAugmenter.getPropertyValues(extendedPropertyName, valueExtraction, Map.of("VirtualProperties.DefaultLocation.Wgs84Coordinates", shapeObject));
+        Assertions.assertNotNull(propertyValues);
+        Assertions.assertEquals(1, propertyValues.size());
+
+        Assertions.assertTrue(propertyValues.containsKey(extendedPropertyName));
+        double doubleValue = (double) propertyValues.get(extendedPropertyName);
+        Assertions.assertTrue(Math.abs(doubleValue - 12021.88) < 0.01);
+    }
+}
