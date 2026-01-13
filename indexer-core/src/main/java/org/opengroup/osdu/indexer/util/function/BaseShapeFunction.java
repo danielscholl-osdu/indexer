@@ -23,12 +23,14 @@ public abstract class BaseShapeFunction implements IAugmenterFunction {
 
     @Override
     public boolean isMatched(ValueExtraction valueExtraction) {
-        String regx = getRegex();
-        String valuePath = getAndTrimValuePath(valueExtraction);
-        if(!Strings.isNullOrEmpty(regx) && !Strings.isNullOrEmpty(valuePath)) {
-            Pattern pattern = Pattern.compile(regx, Pattern.CASE_INSENSITIVE);
-            Matcher matcher = pattern.matcher(valuePath);
-            return matcher.matches();
+        if(valueExtraction != null && valueExtraction.isValid()) {
+            String regx = getRegex();
+            String valuePath = getAndTrimValuePath(valueExtraction);
+            if(!Strings.isNullOrEmpty(regx) && !Strings.isNullOrEmpty(valuePath)) {
+                Pattern pattern = Pattern.compile(regx, Pattern.CASE_INSENSITIVE);
+                Matcher matcher = pattern.matcher(valuePath);
+                return matcher.matches();
+            }
         }
         return false;
     }
@@ -94,29 +96,24 @@ public abstract class BaseShapeFunction implements IAugmenterFunction {
     }
 
     private String getAndTrimValuePath(ValueExtraction valueExtraction) {
-        String valuePath = valueExtraction.getValuePath();
-        if(!Strings.isNullOrEmpty(valuePath)) {
-            valuePath = PropertyUtil.removeDataPrefix(valuePath.trim());
+        if(!valueExtraction.isValid()) {
+            return "";
         }
-        return valuePath;
+
+        return valueExtraction.getValuePath().trim();
     }
 
     private synchronized ObjectMapper getDeserializerMapper() {
         if (deserializerMapper == null) {
-            deserializerMapper = createDeserializerMapper();
+            deserializerMapper = new ObjectMapper();
+            deserializerMapper.registerSubtypes(new NamedType(GeometryCollection.class, GeoJsonConstants.GEOMETRY_COLLECTION));
+            deserializerMapper.registerSubtypes(new NamedType(Polygon.class, GeoJsonConstants.POLYGON));
+            deserializerMapper.registerSubtypes(new NamedType(MultiPolygon.class, GeoJsonConstants.MULTI_POLYGON));
+            deserializerMapper.registerSubtypes(new NamedType(LineString.class, GeoJsonConstants.LINE_STRING));
+            deserializerMapper.registerSubtypes(new NamedType(MultiLineString.class, GeoJsonConstants.MULTI_LINE_STRING));
+            deserializerMapper.registerSubtypes(new NamedType(Point.class, GeoJsonConstants.POINT));
+            deserializerMapper.registerSubtypes(new NamedType(MultiPoint.class, GeoJsonConstants.MULTI_POINT));
         }
         return deserializerMapper;
-    }
-
-    private ObjectMapper createDeserializerMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerSubtypes(new NamedType(GeometryCollection.class, GeoJsonConstants.GEOMETRY_COLLECTION));
-        mapper.registerSubtypes(new NamedType(Polygon.class, GeoJsonConstants.POLYGON));
-        mapper.registerSubtypes(new NamedType(MultiPolygon.class, GeoJsonConstants.MULTI_POLYGON));
-        mapper.registerSubtypes(new NamedType(LineString.class, GeoJsonConstants.LINE_STRING));
-        mapper.registerSubtypes(new NamedType(MultiLineString.class, GeoJsonConstants.MULTI_LINE_STRING));
-        mapper.registerSubtypes(new NamedType(Point.class, GeoJsonConstants.POINT));
-        mapper.registerSubtypes(new NamedType(MultiPoint.class, GeoJsonConstants.MULTI_POINT));
-        return mapper;
     }
 }
