@@ -71,9 +71,14 @@ public class LengthAugmenterImpl extends BaseShapeFunction {
             return 0;
         }
 
-        Position first = line.get(0);
-        Position last = line.get(line.size() -1);
-        GeodesicLine geodesicLine = Geodesic.WGS84.InverseLine(first.getLatitude(), first.getLongitude(), last.getLatitude(), last.getLongitude());
-        return geodesicLine.Distance();
+        double length = 0;
+        for (int i = 0; i < line.size() -1; i++) {
+            Position current = line.get(i);
+            Position next = line.get(i + 1);
+            GeodesicLine geodesicLine = Geodesic.WGS84.InverseLine(current.getLatitude(), current.getLongitude(), next.getLatitude(), next.getLongitude());
+            length += geodesicLine.Distance();
+        }
+
+        return length;
     }
 }
