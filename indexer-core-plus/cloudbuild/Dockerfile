@@ -22,11 +22,14 @@ RUN groupadd -g 10001 -r nonroot \
 # Run as non-root user
 USER 10001:10001
 
+# Expose debug port
+EXPOSE 5005
 # Run the web service on container startup.
 #--add-opens args used to open modules and allow illegal(reflection\private classes and fields) access from the code.
 CMD java  --add-opens java.base/java.lang=ALL-UNNAMED \
           --add-opens java.base/java.lang.reflect=ALL-UNNAMED \
           -Djava.security.egd=indexer:/dev/./urandom \
+          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 \
           -Dloader.path=plugins/ \
           -Dserver.port=${PORT} \
           -Dlog4j.formatMsgNoLookups=true \
