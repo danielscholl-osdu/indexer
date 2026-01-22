@@ -115,8 +115,8 @@ download_plugins:
 
   only:
     variables:
-    #  TODO uncomment and remove branch rule before merge
-    #  - $CIMPL == '1'
+      - $CIMPL == '1'
+      #  TODO remove branch rule before merge
       - '$CI_COMMIT_BRANCH == "test-cimpl-collaboration-context"'
 
 aws-test-java:
