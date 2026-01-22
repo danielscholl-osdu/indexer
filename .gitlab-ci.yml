@@ -99,7 +99,7 @@ download_plugins:
   tags: ["osdu-small"]
   variables:
     OQM_PACKAGE_REGISRTY_URL: "https://community.opengroup.org/api/v4/projects/1450/packages/maven"
-    OQM_VERSION: "0.28.0"
+    OQM_VERSION: "0.28.2"
     APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1445/packages/maven"
     APD_VERSION: "0.27.0-rc1"
 

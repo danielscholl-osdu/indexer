@@ -285,7 +285,7 @@ public class IndexerQueueTaskBuilderAwsTest {
     public void go_through_init_StorageQueue() throws Exception  {
 
         try (MockedConstruction<K8sLocalParameterProvider> provider = Mockito.mockConstruction(K8sLocalParameterProvider.class, (mock, context) -> {
-                                                                                                                when(mock.getParameterAsString(eq("STORAGE_SQS_URL"))).thenReturn(storage_sqs_url);
+                                                                                                                when(mock.getParameterAsString(eq("STORAGE_V2_SQS_URL"))).thenReturn(storage_sqs_url);
                                                                                                                 when(mock.getParameterAsString("INDEXER_DEADLETTER_QUEUE_SQS_URL")).thenReturn(deadletter_queue_sqs_url);
                                                                                                             })) {
 
@@ -347,7 +347,7 @@ public class IndexerQueueTaskBuilderAwsTest {
     public void go_through_init_StorageQueue_with_x_collab() throws Exception  {
 
         try (MockedConstruction<K8sLocalParameterProvider> provider = Mockito.mockConstruction(K8sLocalParameterProvider.class, (mock, context) -> {
-            when(mock.getParameterAsString(eq("STORAGE_SQS_URL"))).thenReturn(storage_sqs_url);
+            when(mock.getParameterAsString(eq("STORAGE_V2_SQS_URL"))).thenReturn(storage_sqs_url);
             when(mock.getParameterAsString("INDEXER_DEADLETTER_QUEUE_SQS_URL")).thenReturn(deadletter_queue_sqs_url);
         })) {
 
