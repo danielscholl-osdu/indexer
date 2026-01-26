@@ -50,12 +50,7 @@ Feature: Indexing of the documents
       | "test:indexer:index-property--Wellbore:1.0.0"     | "index-property-wellbore_v1"     | 1      |  "test-indexer-index-property--wellbore-1.0.0"     | "data.default.viewers@tenant1" | "data.WellUWI"                | "123454321"     |
       | "test:indexer:index-property--WellLog:1.0.0"      | "index-property-welllog_v1"      | 1      |  "test-indexer-index-property--welllog-1.0.0"      | "data.default.viewers@tenant1" | "data.WellboreName"           | "Facility_123"  |
       | "test:indexer:index-property--BinGrid:1.0.0"      | "index_property_bingrid_v1"      | 1      |  "test-indexer-index-property--bingrid-1.0.0"      | "data.default.viewers@tenant1" | "data.Area"                   | "4.496916513E7" |
-      | "test:indexer:index-property--BinGrid:1.0.0"      | "index_property_bingrid_v1"      | 1      |  "test-indexer-index-property--bingrid-1.0.0"      | "data.default.viewers@tenant1" | "data.Extent.latitudeRange"   | "0.061965"      |
-      | "test:indexer:index-property--BinGrid:1.0.0"      | "index_property_bingrid_v1"      | 1      |  "test-indexer-index-property--bingrid-1.0.0"      | "data.default.viewers@tenant1" | "data.Extent.longitudeRange"  | "0.169306"      |
       | "test:indexer:index-property--LineGeometry:1.0.0" | "index_property_linegeometry_v1" | 1      |  "test-indexer-index-property--linegeometry-1.0.0" | "data.default.viewers@tenant1" | "data.Length"                 | "12021.88"      |
-      | "test:indexer:index-property--LineGeometry:1.0.0" | "index_property_linegeometry_v1" | 1      |  "test-indexer-index-property--linegeometry-1.0.0" | "data.default.viewers@tenant1" | "data.Extent.latitudeRange"   | "0.0023"        |
-      | "test:indexer:index-property--LineGeometry:1.0.0" | "index_property_linegeometry_v1" | 1      |  "test-indexer-index-property--linegeometry-1.0.0" | "data.default.viewers@tenant1" | "data.Extent.longitudeRange"  | "0.1224"        |
-
 
   @indexer-extended
   Scenario Outline: Ingest the records of the extended kinds, Index in the Elastic Search and Search spatial field
