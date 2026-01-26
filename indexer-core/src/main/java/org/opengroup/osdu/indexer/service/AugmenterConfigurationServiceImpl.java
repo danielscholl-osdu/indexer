@@ -106,7 +106,7 @@ public class AugmenterConfigurationServiceImpl implements AugmenterConfiguration
     @Inject
     private SearchClient searchClient;
     @Inject
-    private AugmenterFunctionFactory augmenterFunctionFactory;
+    AugmenterFunctionFactory augmenterFunctionFactory;
 
     @Value("${augmenter.extended_list_value.max_size:2000}")
     int maxSizeOfExtendedListValue;
