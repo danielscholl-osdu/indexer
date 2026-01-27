@@ -17,10 +17,13 @@
 
 package org.opengroup.osdu.indexer.indexing.initialization;
 
+import static org.opengroup.osdu.indexer.config.IndexerConfigurationProperties.COLLABORATIONS_FEATURE_NAME;
+
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opengroup.osdu.auth.TokenProvider;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.indexer.model.XcollaborationHolder;
@@ -52,7 +55,7 @@ public class TenantSubscriberConfiguration {
   private final ThreadDpsHeaders headers;
   private final RecordIndexerApi recordIndexerApi;
   private final ReindexApi reindexApi;
-  private final XcollaborationHolder xcollaborationHolder;
+  private final IFeatureFlag featureFlagChecker;
 
   /**
    * Tenant configurations provided by the Partition service will be used to configure subscribers. If tenants use the
@@ -98,7 +101,7 @@ public class TenantSubscriberConfiguration {
           new ReindexMessageReceiver(headers, tokenProvider, recordIndexerApi),
           OqmSubscriberThroughput.MAX
       );
-      if (xcollaborationHolder.isFeatureEnabled()) {
+      if (featureFlagChecker.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, dataPartitionId)) {
         subscriberManager.registerSubscriber(
             dataPartitionId,
             recordsChangedTopicNameV2,
