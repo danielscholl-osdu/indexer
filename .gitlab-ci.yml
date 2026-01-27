@@ -31,9 +31,9 @@ variables:
 
   ACCEPTANCE_TEST_DIR: "indexer-acceptance-test"
 
-  # ### TODO remove before merge
-  # PROTECTED: '1'
-  # ###
+  ### TODO remove before merge
+  PROTECTED: '1'
+  ###
 
 include:
   - project: "osdu/platform/ci-cd-pipelines"
@@ -87,11 +87,11 @@ include:
   - local: "devops/gc/pipeline/override-stages.yml"
   - local: "devops/aws/pipeline/override-stages.yml"
   - local: "devops/core-plus/pipeline/override-stages.yml"
-  # ### TODO remove before merge
-  # - project: "osdu/platform/ci-cd-pipelines"
-  #   file: "cloud-providers/cimpl-collaboration.yml"
-  #   ref: "test-collaboration"
-  # ###
+  ### TODO remove before merge
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/cimpl-collaboration.yml"
+    ref: "test-collaboration"
+  ###
 
 download_plugins:
   image: maven:3.8.3-openjdk-17-slim
