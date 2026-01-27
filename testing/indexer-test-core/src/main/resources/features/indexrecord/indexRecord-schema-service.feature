@@ -38,7 +38,7 @@ Feature: Indexing of the documents
 
     Examples:
       | kind                                                            | recordFile                                   | number | index                                                           | acl                            | extendedKinds                                                                              |
-      | "osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0" | "osdu_wks_IndexPropertyPathConfiguration_v1" | 2      | "osdu-wks-reference-data--indexpropertypathconfiguration-1.0.0" | "data.default.viewers@tenant1" | "test:indexer:index-property--Wellbore:1.0.0,test:indexer:index-property--WellLog:1.0.0"  |
+      | "osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0" | "osdu_wks_IndexPropertyPathConfiguration_v1" | 4      | "osdu-wks-reference-data--indexpropertypathconfiguration-1.0.0" | "data.default.viewers@tenant1" | "test:indexer:index-property--Wellbore:1.0.0,test:indexer:index-property--WellLog:1.0.0"  |
 
   @indexer-extended
   Scenario Outline: Ingest the records of the extended kinds, Index in the Elastic Search and Search string field
