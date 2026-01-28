@@ -76,11 +76,7 @@ import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import javax.net.ssl.SSLContext;
@@ -94,6 +90,7 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.opengroup.osdu.core.common.model.search.RecordMetaAttribute;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.models.record.RecordData;
 
@@ -404,8 +401,26 @@ public class ElasticUtils {
                     .index(index)
                     .build();
 
-            SearchResponse searchResponse = client.search(searchRequest, Void.class);
-            String json = (new Gson()).toJson(searchResponse);
+            SearchResponse searchResponse = client.search(searchRequest, (Type) Map.class);
+            List<Map<String, Object>> results = new ArrayList<>();
+            HitsMetadata<Map<String, Object>> searchHits = searchResponse.hits();
+            if (searchHits.hits() != null && !searchHits.hits().isEmpty()) {
+                for (Hit<Map<String, Object>> hit : searchHits.hits()) {
+                    Map<String, Object> hitFields = hit.source();
+                    if (hit.highlight() != null && !hit.highlight().isEmpty()) {
+                        Map<String, List<String>> highlights = new HashMap<>();
+                        for (Map.Entry<String, List<String>> entry : hit.highlight().entrySet()) {
+                            String fieldName = entry.getKey();
+                            if (!fieldName.equalsIgnoreCase(RecordMetaAttribute.X_ACL.getValue())) {
+                                highlights.put(fieldName, entry.getValue().stream().map(String::toString).toList());
+                            }
+                        }
+                        hitFields.put("highlight", highlights);
+                    }
+                    results.add(hitFields);
+                }
+            }
+            String json = (new Gson()).toJson(results);
             log.log(Level.INFO, json);
         } catch (ElasticsearchException e) {
             log.log(Level.INFO, String.format("Elastic search threw exception: %s", e.getMessage()));
