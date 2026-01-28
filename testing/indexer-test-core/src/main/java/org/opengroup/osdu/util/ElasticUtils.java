@@ -394,6 +394,23 @@ public class ElasticUtils {
             return -1;
         }
     }
+
+    public void fetchAndLogRecords(String index) throws Exception {
+        try {
+            TimeUnit.SECONDS.sleep(40);
+            ElasticsearchClient client = this.getOrCreateClient(username, password, host);
+
+            SearchRequest searchRequest = new SearchRequest.Builder()
+                    .index(index)
+                    .build();
+
+            SearchResponse searchResponse = client.search(searchRequest, Void.class);
+            String json = (new Gson()).toJson(searchResponse);
+            log.log(Level.INFO, json);
+        } catch (ElasticsearchException e) {
+            log.log(Level.INFO, String.format("Elastic search threw exception: %s", e.getMessage()));
+        }
+    }
     
     public long fetchRecordsByGeoWithinQuery(String index, String field, Double topLatitude, Double topLongitude,
         Double bottomLatitude, Double bottomLongitude) throws Exception {
