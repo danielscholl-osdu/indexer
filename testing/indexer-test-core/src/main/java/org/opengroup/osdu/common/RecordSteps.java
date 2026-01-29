@@ -234,10 +234,6 @@ public class RecordSteps extends TestsBase {
         TimeUnit.SECONDS.sleep(60);
         index = generateActualName(index, timeStamp);
         long actualNumberOfRecords = elasticUtils.fetchRecordsByFieldAndFieldValue(index, fieldKey, fieldValue);
-        if(actualNumberOfRecords != expectedNumber) {
-            log.info(String.format("expectedNumber = %d, actualNumber = %d", expectedNumber, actualNumberOfRecords));
-            elasticUtils.fetchAndLogRecords(index);
-        }
         assertEquals(expectedNumber, actualNumberOfRecords);
     }
 
