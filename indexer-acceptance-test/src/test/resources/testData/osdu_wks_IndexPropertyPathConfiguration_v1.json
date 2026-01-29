@@ -71,7 +71,7 @@
         "data": {
           "Name": "SeismicBinGrid-IndexPropertyPathConfiguration",
           "Description": "The index property list for index-property--SeismicBinGrid:1., valid for all index-property--SeismicBinGrid kinds for major version 1.",
-          "Code": "test:indexer:index-property--SeismicBinGrid:1.",
+          "Code": "test:indexer:index-property--BinGrid:1.",
           "AttributionAuthority": "OSDU",
           "Configurations": [{
             "Name": "Extent",
@@ -101,7 +101,7 @@
         "data": {
           "Name": "SeismicLineGeometry-IndexPropertyPathConfiguration",
           "Description": "The index property list for index-property--SeismicLineGeometry:1., valid for all index-property--SeismicLineGeometry kinds for major version 1.",
-          "Code": "test:indexer:index-property--SeismicLineGeometry:1.",
+          "Code": "test:indexer:index-property--LineGeometry:1.",
           "AttributionAuthority": "OSDU",
           "Configurations": [{
             "Name": "Extent",
@@ -127,5 +127,4 @@
           ]
         }
     }
-
 ]
