@@ -15,6 +15,8 @@
 
 package org.opengroup.osdu.indexer.util.function;
 
+import lombok.RequiredArgsConstructor;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.indexer.StorageType;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import org.opengroup.osdu.indexer.model.GeoJsonObject;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class ExtentAugmenterImpl extends BaseShapeFunction  {
     private static final String regex = "^Extent\\s*\\(\\s*[\\w\\-\\.\\[\\]]+\\s*\\)$";
     private static final int DECIMAL_PLACES = 6;
@@ -38,9 +41,16 @@ public class ExtentAugmenterImpl extends BaseShapeFunction  {
     private static final String LATITUDE_CENTER = "latitudeCenter";
     private static final String LONGITUDE_CENTER = "longitudeCenter";
 
+    private final JaxRsDpsLog jaxRsDpsLog;
+
     @Override
     protected String getRegex() {
         return regex;
+    }
+
+    @Override
+    protected JaxRsDpsLog getLogger() {
+        return jaxRsDpsLog;
     }
 
     @Override

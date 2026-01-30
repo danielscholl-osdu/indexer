@@ -18,6 +18,7 @@ package org.opengroup.osdu.indexer.util.function;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.google.common.base.Strings;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.indexer.StorageType;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import org.opengroup.osdu.indexer.model.geojson.*;
@@ -76,25 +77,30 @@ public abstract class BaseShapeFunction implements IAugmenterFunction {
     public Map<String, Object> getPropertyValues(String extendedPropertyName, ValueExtraction valueExtraction, Map<String, Object> originalPropertyValues) {
         extendedPropertyName = PropertyUtil.removeDataPrefix(extendedPropertyName);
         List<String> valuePaths = getValuePaths(valueExtraction);
+        GeometryCollection geometryCollection = null;
         if(!CollectionUtils.isEmpty(originalPropertyValues) && !CollectionUtils.isEmpty(valuePaths)) {
             try {
                 String valuePath = valuePaths.get(0);
                 Map<String, Object> shapeObj = (Map<String, Object>) originalPropertyValues.getOrDefault(valuePath, null);
                 if(shapeObj != null) {
                     ObjectMapper objectMapper = getDeserializerMapper();
-                    GeometryCollection geometryCollection = objectMapper.readValue(objectMapper.writeValueAsString(shapeObj), GeometryCollection.class);
-                    return doGetValues(extendedPropertyName, valueExtraction, geometryCollection);
+                    geometryCollection = objectMapper.readValue(objectMapper.writeValueAsString(shapeObj), GeometryCollection.class);
                 }
             }
             catch(Exception e) {
-                //Ignore
+                getLogger().error("Failed to deserialize the shape object", e);
             }
         }
-
-        return new HashMap<>();
+        if(geometryCollection != null) {
+            return doGetValues(extendedPropertyName, valueExtraction, geometryCollection);
+        }
+        else {
+            return new HashMap<>();
+        }
     }
 
     protected abstract String getRegex();
+    protected abstract JaxRsDpsLog getLogger();
     protected abstract List<SchemaItem> doGetExtendedSchemaItems(String extendedPropertyName);
     protected abstract Map<String, Object> doGetValues(String extendedPropertyName, ValueExtraction valueExtraction, GeometryCollection geometryCollection);
 

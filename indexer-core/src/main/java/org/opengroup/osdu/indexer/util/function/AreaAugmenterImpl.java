@@ -46,6 +46,11 @@ public class AreaAugmenterImpl extends BaseShapeFunction {
     }
 
     @Override
+    protected JaxRsDpsLog getLogger() {
+        return jaxRsDpsLog;
+    }
+
+    @Override
     protected List<SchemaItem> doGetExtendedSchemaItems(String extendedPropertyName) {
         List<SchemaItem> extendedSchemaItems = new ArrayList<>();
         extendedSchemaItems.add(createSchemaItem(extendedPropertyName, StorageType.DOUBLE));
