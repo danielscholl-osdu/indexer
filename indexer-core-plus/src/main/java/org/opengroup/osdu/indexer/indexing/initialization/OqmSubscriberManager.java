@@ -43,6 +43,8 @@ public class OqmSubscriberManager {
       OqmMessageReceiver messageReceiver, OqmSubscriberThroughput throughput) {
     OqmSubscription subscriptionForTenant = getSubscriptionForTenant(dataPartitionId, topicName, subscriptionName);
     log.info("OQM: registering Subscriber for subscription {}", subscriptionName);
+    log.info("dataPartitionId: {}, topicName: {}, subscriptionName: {}, subscriptionForTenant: {}",
+        dataPartitionId, topicName, subscriptionName, subscriptionForTenant);
 
     OqmDestination destination = getDestination(dataPartitionId);
     OqmSubscriber subscriber = OqmSubscriber.builder()
@@ -50,6 +52,7 @@ public class OqmSubscriberManager {
         .messageReceiver(messageReceiver)
         .throughput(throughput)
         .build();
+    log.info("subscriber: {}, destination: {}", subscriber, destination);
 
     driver.subscribe(subscriber, destination);
     log.info("OQM: provisioning subscription {}: Subscriber REGISTERED.", subscriptionName);

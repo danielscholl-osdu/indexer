@@ -30,6 +30,7 @@ public class MessagingConfigProperties {
     @Deprecated
     private String defaultRelativeIndexerWorkerUrl;
     private String recordsChangedTopicName;
+    private String recordsChangedTopicNameV2;
     private String schemaChangedTopicName;
     private String statusChangedTopicName;
     private String reprocessTopicName;
