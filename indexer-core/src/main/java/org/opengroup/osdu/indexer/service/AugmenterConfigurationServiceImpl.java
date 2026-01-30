@@ -586,12 +586,13 @@ public class AugmenterConfigurationServiceImpl implements AugmenterConfiguration
     }
 
     private List<SchemaItem> getExtendedSchemaItems(Schema schema, PropertyConfiguration configuration, PropertyPath propertyPath) {
-        if(augmenterFunctionFactory.isAugmenterFunction(propertyPath.getValueExtraction())) {
-            IAugmenterFunction augmenterFunction = augmenterFunctionFactory.getAugmenterFunction(propertyPath.getValueExtraction());
+        ValueExtraction valueExtraction = propertyPath.getValueExtraction();
+        if(augmenterFunctionFactory.isAugmenterFunction(valueExtraction)) {
+            IAugmenterFunction augmenterFunction = augmenterFunctionFactory.getAugmenterFunction(valueExtraction);
             return augmenterFunction.getExtendedSchemaItems(configuration.getExtendedPropertyName());
         }
 
-        String relatedPropertyPath = PropertyUtil.removeDataPrefix(propertyPath.getValueExtraction().getValuePath());
+        String relatedPropertyPath = PropertyUtil.removeDataPrefix(valueExtraction.getValuePath());
         List<SchemaItem> extendedSchemaItems;
         if (relatedPropertyPath.contains(ARRAY_SYMBOL)) { // Nested
             extendedSchemaItems = cloneExtendedSchemaItemsFromNestedSchema(Arrays.asList(schema.getSchema()), configuration, relatedPropertyPath);
