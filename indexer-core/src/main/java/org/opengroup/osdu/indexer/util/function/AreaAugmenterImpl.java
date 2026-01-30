@@ -38,7 +38,7 @@ public class AreaAugmenterImpl extends BaseShapeFunction {
     private static final String regex = "^Area\\s*\\(\\s*[\\w\\-\\.\\[\\]]+\\s*\\)$";
     private static final int DECIMAL_PLACES = 2;
 
-    private JaxRsDpsLog jaxRsDpsLog;
+    private final JaxRsDpsLog jaxRsDpsLog;
 
     @Override
     protected String getRegex() {
