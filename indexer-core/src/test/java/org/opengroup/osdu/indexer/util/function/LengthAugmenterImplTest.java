@@ -42,6 +42,7 @@ public class LengthAugmenterImplTest {
 
     private ValueExtraction valueExtraction;
     private Object shapeObject;
+    ObjectMapper mapper = new ObjectMapper();
 
     @Before
     public void setup() throws JsonProcessingException {
@@ -66,7 +67,6 @@ public class LengthAugmenterImplTest {
                      ]
                  }
                 """;
-        ObjectMapper mapper = new ObjectMapper();
         shapeObject = mapper.readValue(json, Object.class);
     }
 
@@ -91,6 +91,8 @@ public class LengthAugmenterImplTest {
     public void isMatched_return_false() {
         valueExtraction.setValuePath("Length(VirtualProperties.DefaultLocation.Wgs84Coordinates)");
         Assertions.assertFalse(lengthAugmenter.isMatched(valueExtraction));
+
+        Assertions.assertFalse(lengthAugmenter.isMatched(null));
     }
 
     @Test
@@ -134,5 +136,59 @@ public class LengthAugmenterImplTest {
         Assertions.assertTrue(propertyValues.containsKey(extendedPropertyName));
         double doubleValue = (double) propertyValues.get(extendedPropertyName);
         Assertions.assertTrue(Math.abs(doubleValue - 12021.88) < 0.01);
+    }
+
+    @Test
+    public void getPropertyValues_with_empty_shape() throws JsonProcessingException {
+        String json = """
+        {"type": "geometrycollection", "geometries": []}
+        """;
+        shapeObject = mapper.readValue(json, Object.class);
+
+        String extendedPropertyName = "Length";
+        Map<String, Object> propertyValues = lengthAugmenter.getPropertyValues(extendedPropertyName, valueExtraction, Map.of("VirtualProperties.DefaultLocation.Wgs84Coordinates", shapeObject));
+        Assertions.assertTrue(propertyValues.isEmpty());
+    }
+
+    @Test
+    public void getPropertyValues_with_unsupported_type_of_shape() throws JsonProcessingException {
+        String json = """
+                {
+                      "type": "geometrycollection",
+                      "geometries": [{
+                              "type": "linestring",
+                              "coordinates": [
+                                  [
+                                      [
+                                          100.0,
+                                          0.0
+                                      ],
+                                      [
+                                          101.0,
+                                          0.0
+                                      ],
+                                      [
+                                          101.0,
+                                          1.0
+                                      ],
+                                      [
+                                          100.0,
+                                          1.0
+                                      ],
+                                      [
+                                          100.0,
+                                          0.0
+                                      ]
+                                  ]
+                              ]
+                          }
+                      ]
+                  }
+                """;
+        shapeObject = mapper.readValue(json, Object.class);
+
+        String extendedPropertyName = "Length";
+        Map<String, Object> propertyValues = lengthAugmenter.getPropertyValues(extendedPropertyName, valueExtraction, Map.of("VirtualProperties.DefaultLocation.Wgs84Coordinates", shapeObject));
+        Assertions.assertTrue(propertyValues.isEmpty());
     }
 }

@@ -46,13 +46,13 @@ public class AreaAugmenterImplTest {
 
     private ValueExtraction valueExtraction;
     private Object shapeObject;
+    ObjectMapper mapper = new ObjectMapper();
 
     @Before
     public void setup() throws JsonProcessingException {
         valueExtraction = new ValueExtraction();
         valueExtraction.setValuePath("Area(VirtualProperties.DefaultLocation.Wgs84Coordinates)");
         String json = getJsonFromFile();
-        ObjectMapper mapper = new ObjectMapper();
         shapeObject = mapper.readValue(json, Object.class);
     }
 
@@ -76,6 +76,8 @@ public class AreaAugmenterImplTest {
     public void isMatched_return_false() {
         valueExtraction.setValuePath("A(VirtualProperties.DefaultLocation.Wgs84Coordinates)");
         Assertions.assertFalse(areaAugmenter.isMatched(valueExtraction));
+
+        Assertions.assertFalse(areaAugmenter.isMatched(null));
     }
 
     @Test
@@ -119,6 +121,46 @@ public class AreaAugmenterImplTest {
         Assertions.assertTrue(propertyValues.containsKey(extendedPropertyName));
         double doubleValue = (double) propertyValues.get(extendedPropertyName);
         Assertions.assertTrue(Math.abs(doubleValue - 312263853.32) < 0.01);
+    }
+
+    @Test
+    public void getPropertyValues_with_empty_shape() throws JsonProcessingException {
+        String json = """
+        {"type": "geometrycollection", "geometries": []}
+        """;
+        shapeObject = mapper.readValue(json, Object.class);
+
+        String extendedPropertyName = "Area";
+        Map<String, Object> propertyValues = areaAugmenter.getPropertyValues(extendedPropertyName, valueExtraction, Map.of("VirtualProperties.DefaultLocation.Wgs84Coordinates", shapeObject));
+        Assertions.assertTrue(propertyValues.isEmpty());
+    }
+
+    @Test
+    public void getPropertyValues_with_unsupported_type_of_shape() throws JsonProcessingException {
+        String json = """
+                {
+                     "type": "geometrycollection",
+                     "geometries": [{
+                             "type": "linestring",
+                             "coordinates": [
+                                 [
+                                     -92.592,
+                                     28.1811
+                                 ],
+                                 [
+                                     -92.4696,
+                                     28.1834
+                                 ]
+                             ]
+                         }
+                     ]
+                 }
+                """;
+        shapeObject = mapper.readValue(json, Object.class);
+
+        String extendedPropertyName = "Area";
+        Map<String, Object> propertyValues = areaAugmenter.getPropertyValues(extendedPropertyName, valueExtraction, Map.of("VirtualProperties.DefaultLocation.Wgs84Coordinates", shapeObject));
+        Assertions.assertTrue(propertyValues.isEmpty());
     }
 
 

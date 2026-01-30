@@ -37,6 +37,7 @@ public class ExtentAugmenterImplTest {
 
     private ValueExtraction valueExtraction;
     private Object shapeObject;
+    ObjectMapper mapper = new ObjectMapper();
 
     @Before
     public void setup() throws JsonProcessingException {
@@ -77,7 +78,6 @@ public class ExtentAugmenterImplTest {
                   }
               }
               """;
-        ObjectMapper mapper = new ObjectMapper();
         shapeObject = mapper.readValue(json, Object.class);
     }
 
@@ -101,6 +101,8 @@ public class ExtentAugmenterImplTest {
     public void isMatched_return_false() {
         valueExtraction.setValuePath("Extend(VirtualProperties.DefaultLocation.Wgs84Coordinates)");
         Assertions.assertFalse(extentAugmenter.isMatched(valueExtraction));
+
+        Assertions.assertFalse(extentAugmenter.isMatched(null));
     }
 
     @Test
@@ -154,5 +156,17 @@ public class ExtentAugmenterImplTest {
 
         double longitudeCenter = (double) propertyValues.get(extendedPropertyName + "." + "longitudeCenter");
         Assertions.assertTrue(Math.abs(longitudeCenter - 1.877235) < 0.000001);
+    }
+
+    @Test
+    public void getPropertyValues_with_empty_shape() throws JsonProcessingException {
+        String json = """
+        {"type": "geometrycollection", "geometries": []}
+        """;
+        shapeObject = mapper.readValue(json, Object.class);
+
+        String extendedPropertyName = "Extent";
+        Map<String, Object> propertyValues = extentAugmenter.getPropertyValues(extendedPropertyName, valueExtraction, Map.of("VirtualProperties.DefaultLocation.Wgs84Coordinates", shapeObject));
+        Assertions.assertTrue(propertyValues.isEmpty());
     }
 }
