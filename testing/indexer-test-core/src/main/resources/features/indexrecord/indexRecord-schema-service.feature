@@ -18,6 +18,8 @@ Feature: Indexing of the documents
       | osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0 | osdu-wks-reference-data--indexpropertypathconfiguration-1.0.0 | osdu_wks_IndexPropertyPathConfiguration_v1 |
       | test:indexer:index-property--Wellbore:1.0.0         | test-indexer-index-property--wellbore-1.0.0         | index-property-wellbore_v1     |
       | test:indexer:index-property--WellLog:1.0.0          | test-indexer-index-property--welllog-1.0.0          | index-property-welllog_v1      |
+      | test:indexer:index-property--BinGrid:1.0.0          | test-indexer-index-property--bingrid-1.0.0          | index_property_bingrid_v1      |
+      | test:indexer:index-property--LineGeometry:1.0.0     | test-indexer-index-property--linegeometry-1.0.0     | index_property_linegeometry_v1 |
 
   @collaboration-test
   Scenario Outline: X Ingest the record with no xcollab value and Index in the Elastic Search with tags
@@ -36,7 +38,7 @@ Feature: Indexing of the documents
 
     Examples:
       | kind                                                            | recordFile                                   | number | index                                                           | acl                            | extendedKinds                                                                              |
-      | "osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0" | "osdu_wks_IndexPropertyPathConfiguration_v1" | 2      | "osdu-wks-reference-data--indexpropertypathconfiguration-1.0.0" | "data.default.viewers@tenant1" | "test:indexer:index-property--Wellbore:1.0.0,test:indexer:index-property--WellLog:1.0.0"  |
+      | "osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0" | "osdu_wks_IndexPropertyPathConfiguration_v1" | 4      | "osdu-wks-reference-data--indexpropertypathconfiguration-1.0.0" | "data.default.viewers@tenant1" | "test:indexer:index-property--Wellbore:1.0.0,test:indexer:index-property--WellLog:1.0.0"  |
 
   @indexer-extended
   Scenario Outline: Ingest the records of the extended kinds, Index in the Elastic Search and Search string field
@@ -44,9 +46,11 @@ Feature: Indexing of the documents
     Then I should be able to search <number> record with index <index> by extended data field <field> and value <value>
 
     Examples:
-      | kind                                           | recordFile                    | number | index                                           | acl                            |  field               | value           |
-      | "test:indexer:index-property--Wellbore:1.0.0"  | "index-property-wellbore_v1"  | 1      |  "test-indexer-index-property--wellbore-1.0.0"  | "data.default.viewers@tenant1" | "data.WellUWI"       | "123454321"     |
-      | "test:indexer:index-property--WellLog:1.0.0"   | "index-property-welllog_v1"   | 1      |  "test-indexer-index-property--welllog-1.0.0"   | "data.default.viewers@tenant1" | "data.WellboreName"  | "Facility_123"  |
+      | kind                                              | recordFile                       | number | index                                              | acl                            |  field                        | value           |
+      | "test:indexer:index-property--Wellbore:1.0.0"     | "index-property-wellbore_v1"     | 1      |  "test-indexer-index-property--wellbore-1.0.0"     | "data.default.viewers@tenant1" | "data.WellUWI"                | "123454321"     |
+      | "test:indexer:index-property--WellLog:1.0.0"      | "index-property-welllog_v1"      | 1      |  "test-indexer-index-property--welllog-1.0.0"      | "data.default.viewers@tenant1" | "data.WellboreName"           | "Facility_123"  |
+      | "test:indexer:index-property--BinGrid:1.0.0"      | "index_property_bingrid_v1"      | 1      |  "test-indexer-index-property--bingrid-1.0.0"      | "data.default.viewers@tenant1" | "data.Area"                   | "4.496916513E7" |
+      | "test:indexer:index-property--LineGeometry:1.0.0" | "index_property_linegeometry_v1" | 1      |  "test-indexer-index-property--linegeometry-1.0.0" | "data.default.viewers@tenant1" | "data.Length"                 | "12021.88"      |
 
   @indexer-extended
   Scenario Outline: Ingest the records of the extended kinds, Index in the Elastic Search and Search spatial field
