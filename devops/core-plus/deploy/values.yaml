@@ -18,6 +18,9 @@ data:
   securityHttpsCertificateTrust: "true"
   storageHost: "http://storage"
   collaborationsEnabled: true
+  # Otel
+  javaToolOptions: ""
+  otelExporterEndpoint: ""
   # PubSub topic configuration
   pubsubSearchTopicV2: "records-changed-v2"
   # Deployment
