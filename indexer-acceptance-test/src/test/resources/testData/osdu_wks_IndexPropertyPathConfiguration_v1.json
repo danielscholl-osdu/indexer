@@ -66,5 +66,65 @@
                 }
             ]
         }
+    }, {
+        "id": "tenant1:reference-data--IndexPropertyPathConfiguration:index-property--SeismicBinGrid:1",
+        "data": {
+          "Name": "SeismicBinGrid-IndexPropertyPathConfiguration",
+          "Description": "The index property list for index-property--SeismicBinGrid:1., valid for all index-property--SeismicBinGrid kinds for major version 1.",
+          "Code": "test:indexer:index-property--BinGrid:1.",
+          "AttributionAuthority": "OSDU",
+          "Configurations": [{
+            "Name": "Extent",
+            "Policy": "ExtractFirstMatch",
+            "UseCase": "As a user I want to know the extent of a geodectic shape and use it to search data.",
+            "Paths": [{
+              "ValueExtraction": {
+                "ValuePath": "Extent(data.VirtualProperties.DefaultLocation.Wgs84Coordinates)"
+              }
+            }
+            ]
+          }, {
+            "Name": "Area",
+            "Policy": "ExtractFirstMatch",
+            "UseCase": "As a user I want to find area of the regions with unit square meter.",
+            "Paths": [{
+              "ValueExtraction": {
+                "ValuePath": "Area(data.VirtualProperties.DefaultLocation.Wgs84Coordinates)"
+              }
+            }
+            ]
+          }
+          ]
+        }
+    }, {
+        "id": "tenant1:reference-data--IndexPropertyPathConfiguration:index-property--SeismicLineGeometry:1",
+        "data": {
+          "Name": "SeismicLineGeometry-IndexPropertyPathConfiguration",
+          "Description": "The index property list for index-property--SeismicLineGeometry:1., valid for all index-property--SeismicLineGeometry kinds for major version 1.",
+          "Code": "test:indexer:index-property--LineGeometry:1.",
+          "AttributionAuthority": "OSDU",
+          "Configurations": [{
+            "Name": "Extent",
+            "Policy": "ExtractFirstMatch",
+            "UseCase": "As a user I want to know the extent of a geodectic shape and use it to search data.",
+            "Paths": [{
+              "ValueExtraction": {
+                "ValuePath": "Extent(data.VirtualProperties.DefaultLocation.Wgs84Coordinates)"
+              }
+            }
+            ]
+          }, {
+            "Name": "Length",
+            "Policy": "ExtractFirstMatch",
+            "UseCase": "As a user I want to find length of the geometry lines in meter.",
+            "Paths": [{
+              "ValueExtraction": {
+                "ValuePath": "Len(data.VirtualProperties.DefaultLocation.Wgs84Coordinates)"
+              }
+            }
+            ]
+          }
+          ]
+        }
     }
 ]

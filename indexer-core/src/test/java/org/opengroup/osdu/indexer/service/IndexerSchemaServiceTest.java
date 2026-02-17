@@ -75,6 +75,7 @@ import org.opengroup.osdu.indexer.schema.converter.exeption.SchemaProcessingExce
 import org.opengroup.osdu.indexer.service.exception.ElasticsearchMappingException;
 import org.opengroup.osdu.indexer.util.AugmenterSetting;
 import org.opengroup.osdu.indexer.util.RequestScopedElasticsearchClient;
+import org.opengroup.osdu.indexer.util.function.AugmenterFunctionFactory;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -106,6 +107,8 @@ public class IndexerSchemaServiceTest {
     private AugmenterSetting augmenterSetting;
     @Mock
     private RequestScopedElasticsearchClient requestScopedClient;
+    @Mock
+    private AugmenterFunctionFactory augmenterFunctionFactory;
     @InjectMocks
     private IndexSchemaServiceImpl sut;
 
@@ -115,6 +118,7 @@ public class IndexerSchemaServiceTest {
         ElasticsearchClient restHighLevelClient = mock(ElasticsearchClient.class);
         when(requestScopedClient.getClient()).thenReturn(restHighLevelClient);
         when(augmenterSetting.isEnabled()).thenReturn(true);
+        when(augmenterFunctionFactory.isAugmenterFunction(any())).thenReturn(false);
     }
 
     @Test
@@ -596,7 +600,7 @@ public class IndexerSchemaServiceTest {
             }
         });
 
-        AugmenterConfigurationService augmenterConfigurationServiceMock = new AugmenterConfigurationServiceImpl();
+        AugmenterConfigurationService augmenterConfigurationServiceMock = getAugmenterConfigurationServiceImpl();
         List<String> schemaResolvedOrders = new ArrayList<>();
         when(this.augmenterConfigurationService.getExtendedSchemaItems(any(), any(), any())).thenAnswer(invocation -> {
             Schema originalSchema = invocation.getArgument(0);
@@ -681,7 +685,7 @@ public class IndexerSchemaServiceTest {
             }
         });
 
-        AugmenterConfigurationService augmenterConfigurationServiceMock = new AugmenterConfigurationServiceImpl();
+        AugmenterConfigurationService augmenterConfigurationServiceMock = getAugmenterConfigurationServiceImpl();
         List<String> schemaResolvedOrders = new ArrayList<>();
         when(this.augmenterConfigurationService.getExtendedSchemaItems(any(), any(), any())).thenAnswer(invocation -> {
             Schema originalSchema = invocation.getArgument(0);
@@ -911,5 +915,11 @@ public class IndexerSchemaServiceTest {
         );
 
         return map;
+    }
+
+    private AugmenterConfigurationService getAugmenterConfigurationServiceImpl() {
+        AugmenterConfigurationServiceImpl augmenterConfigurationService = new AugmenterConfigurationServiceImpl();
+        augmenterConfigurationService.augmenterFunctionFactory = this.augmenterFunctionFactory;
+        return augmenterConfigurationService;
     }
 }
