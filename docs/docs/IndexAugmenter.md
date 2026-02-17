@@ -44,6 +44,12 @@ array if the `Policy` is `ExtractAllMatches`, still supporting text search.
 
 For more information about the index augmenter, please check with the [ADR #81](https://community.opengroup.org/osdu/platform/system/indexer-service/-/issues/81) 
 
+In [ADR #281](https://community.opengroup.org/osdu/platform/system/indexer-service/-/issues/281). we would like to extend the current Index Augmenter 
+with function framework. It will allow developers to add functions that can process data from one or more source properties to generate aggregated results 
+to further support search and data preview. Here are a few highlights:
+- Each augmenter function self-interprets the `ValuePath` property under `ValueExtraction` which means it can accept one or more source property values and extra-metadata, e.g. unit.
+- Each augmenter function must implement IAugmenterFunction and register to AugmenterFunctionFactory. 
+
 ## Use Cases
 ###Use Case 1: WellUWI
 
@@ -282,6 +288,99 @@ the parent entities are not well-defined in the document schema.
 ```
 
 </details>
+
+### Use Case 6: Augmenter Function ```Extent``` to compute the extent of a shape in geodetic coordinate WGS84
+
+This configuration demonstrates the Augmenter function `Extent` to compute the extent of geodectic shape from `VirtualProperties.DefaultLocation.Wgs84Coordinates`.
+
+<details><summary>Configuration for SeismicTraceData, compute the extent from Wgs84Coordinates</summary>
+
+```json
+{
+    "data": {
+        "Code": "osdu:wks:work-product-component--SeismicTraceData:1.",
+        "Configurations": [{
+                "Name": "Extent",
+                "Policy": "ExtractFirstMatch",
+                "Paths": [{
+                        "ValueExtraction": {
+                            "ValuePath": "Extent(data.VirtualProperties.DefaultLocation.Wgs84Coordinates)"
+                        }
+                    }
+                ],
+                "UseCase": "As a user I want to know the extent of a geodectic shape and use it to filter (search) data."
+            }
+        ]
+    }
+}
+
+```
+
+</details>
+
+---
+
+### Use Case 7: Augmenter Function ```Len``` to compute the (total) length of a polyline or multi-polyline shape in geodetic coordinate WGS84
+
+This configuration demonstrates the Augmenter function `Len` to compute the (total) length in meter of a polyline or multi-polyline shape from `VirtualProperties.DefaultLocation.Wgs84Coordinates`.
+
+<details><summary>Configuration for SeismicLineGeometry, compute the length from Wgs84Coordinates</summary>
+
+```json
+{
+    "data": {
+        "Code": "osdu:wks:work-product-component--SeismicLineGeometry:1.",
+        "Configurations": [{
+                "Name": "Length",
+                "Policy": "ExtractFirstMatch",
+                "Paths": [{
+                        "ValueExtraction": {
+                            "ValuePath": "Len(data.VirtualProperties.DefaultLocation.Wgs84Coordinates)"
+                        }
+                    }
+                ],
+                "UseCase": "As a user I want to know the length of a polyline or multi-polyline shape and use it to filter (search) data."
+            }
+        ]
+    }
+}
+
+```
+
+</details>
+
+---
+
+### Use Case 8: Augmenter Function ```Area``` to compute the (total) length of a polygon or multi-polygon shape in geodetic coordinate WGS84
+
+This configuration demonstrates the Augmenter function `Area` to compute the (total) area in square meter of a polygon or multi-polygon shape from `VirtualProperties.DefaultLocation.Wgs84Coordinates`.
+
+<details><summary>Configuration for SeismicBinGrid, compute the extent from `VirtualProperties.DefaultLocation.Wgs84Coordinates`</summary>
+
+```json
+{
+    "data": {
+        "Code": "osdu:wks:work-product-component--SeismicBinGrid:1.",
+        "Configurations": [{
+                "Name": "Area",
+                "Policy": "ExtractFirstMatch",
+                "Paths": [{
+                        "ValueExtraction": {
+                            "ValuePath": "Area(data.VirtualProperties.DefaultLocation.Wgs84Coordinates)"
+                        }
+                    }
+                ],
+                "UseCase": "As a user I want to know the area of a polygon or multi-polygon shape and use it to filter (search) data."
+            }
+        ]
+    }
+}
+
+```
+
+</details>
+
+---
 
 ## Governance
 
