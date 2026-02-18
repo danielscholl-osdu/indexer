@@ -21,6 +21,7 @@ data:
   # Otel
   javaToolOptions: ""
   otelExporterEndpoint: ""
+  otelExporterProtocol: ""
   # PubSub topic configuration
   pubsubSearchTopicV2: "records-changed-v2"
   # Deployment
