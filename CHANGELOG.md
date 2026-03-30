@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/danielscholl-osdu/indexer/compare/v1.1.0...v1.2.0) (2026-03-30)
+
+
+### ✨ Features
+
+* **config:** Add records-changed-topic-name-v2 property to application settings ([55c5743](https://github.com/danielscholl-osdu/indexer/commit/55c5743c7cff7cd84f838e68e8dca8fb91186ff3))
+
+
+### 🔧 Miscellaneous
+
+* Sync template updates ([6929e93](https://github.com/danielscholl-osdu/indexer/commit/6929e93d68e666da923dc0d7bd2cec72bd476cd6))
+
 ## [1.1.0](https://github.com/danielscholl-osdu/indexer/compare/v1.0.0...v1.1.0) (2026-02-20)
 
 
