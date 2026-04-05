@@ -17,11 +17,15 @@ package org.opengroup.osdu.indexer.logging;
 import com.google.common.base.Strings;
 import org.opengroup.osdu.core.common.logging.audit.AuditAction;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
+import org.opengroup.osdu.core.common.logging.audit.AuditPayload.AuditPayloadBuilder;
 import org.opengroup.osdu.core.common.logging.audit.AuditStatus;
 
 import java.util.List;
 
 public class AuditEvents {
+
+    private static final String UNKNOWN = "unknown";
+    private static final String UNKNOWN_IP = "0.0.0.0";
 
     private static final String INDEX_CREATE_RECORD_ACTION_ID = "IN001";
     private static final String INDEX_CREATE_RECORDS_SUCCESS = "Successfully created record in index";
@@ -69,240 +73,192 @@ public class AuditEvents {
     private static final String REINDEX_RECORDS_OPERATION = "Reindex records";
 
     private final String user;
+    private final String userIpAddress;
+    private final String userAgent;
+    private final String userAuthorizedGroupName;
 
-    public AuditEvents(String user) {
-        if (Strings.isNullOrEmpty(user)) {
-            throw new IllegalArgumentException("User not provided for audit events.");
-        }
-        this.user = user;
+    public AuditEvents(String user, String userIpAddress, String userAgent, String userAuthorizedGroupName) {
+        this.user = Strings.isNullOrEmpty(user) ? UNKNOWN : user;
+        this.userIpAddress = Strings.isNullOrEmpty(userIpAddress) ? UNKNOWN_IP : userIpAddress;
+        this.userAgent = Strings.isNullOrEmpty(userAgent) ? UNKNOWN : userAgent;
+        this.userAuthorizedGroupName = Strings.isNullOrEmpty(userAuthorizedGroupName) ? UNKNOWN : userAuthorizedGroupName;
+    }
+
+    private AuditPayloadBuilder createAuditPayloadBuilder(List<String> requiredGroupsForAction, AuditStatus status, String actionId) {
+        return AuditPayload.builder()
+                .status(status)
+                .user(this.user)
+                .actionId(actionId)
+                .requiredGroupsForAction(requiredGroupsForAction)
+                .userIpAddress(this.userIpAddress)
+                .userAgent(this.userAgent)
+                .userAuthorizedGroupName(this.userAuthorizedGroupName);
     }
 
     public AuditPayload getIndexCreateRecordSuccessEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_CREATE_RECORD.getRequiredGroups(), AuditStatus.SUCCESS, INDEX_CREATE_RECORD_ACTION_ID)
                 .action(AuditAction.CREATE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(INDEX_CREATE_RECORD_ACTION_ID)
                 .message(INDEX_CREATE_RECORDS_SUCCESS)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexCreateRecordPartialSuccessEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_CREATE_RECORD.getRequiredGroups(), AuditStatus.PARTIAL_SUCCESS, INDEX_CREATE_RECORD_ACTION_ID)
                 .action(AuditAction.CREATE)
-                .status(AuditStatus.PARTIAL_SUCCESS)
-                .actionId(INDEX_CREATE_RECORD_ACTION_ID)
                 .message(INDEX_CREATE_RECORDS_PARTIAL_SUCCESS)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexCreateRecordFailEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_CREATE_RECORD.getRequiredGroups(), AuditStatus.FAILURE, INDEX_CREATE_RECORD_ACTION_ID)
                 .action(AuditAction.CREATE)
-                .status(AuditStatus.FAILURE)
-                .actionId(INDEX_CREATE_RECORD_ACTION_ID)
                 .message(INDEX_CREATE_RECORDS_FAILURE)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexUpdateRecordSuccessEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_UPDATE_RECORD.getRequiredGroups(), AuditStatus.SUCCESS, INDEX_UPDATE_RECORD_ACTION_ID)
                 .action(AuditAction.UPDATE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(INDEX_UPDATE_RECORD_ACTION_ID)
                 .message(INDEX_UPDATE_RECORDS_SUCCESS)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexUpdateRecordPartialSuccessEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_UPDATE_RECORD.getRequiredGroups(), AuditStatus.PARTIAL_SUCCESS, INDEX_UPDATE_RECORD_ACTION_ID)
                 .action(AuditAction.UPDATE)
-                .status(AuditStatus.PARTIAL_SUCCESS)
-                .actionId(INDEX_UPDATE_RECORD_ACTION_ID)
                 .message(INDEX_UPDATE_RECORDS_PARTIAL_SUCCESS)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
+
     public AuditPayload getIndexUpdateRecordFailEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_UPDATE_RECORD.getRequiredGroups(), AuditStatus.FAILURE, INDEX_UPDATE_RECORD_ACTION_ID)
                 .action(AuditAction.UPDATE)
-                .status(AuditStatus.FAILURE)
-                .actionId(INDEX_UPDATE_RECORD_ACTION_ID)
                 .message(INDEX_UPDATE_RECORDS_FAILURE)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexDeleteRecordSuccessEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_DELETE_RECORD.getRequiredGroups(), AuditStatus.SUCCESS, INDEX_DELETE_RECORD_ACTION_ID)
                 .action(AuditAction.DELETE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(INDEX_DELETE_RECORD_ACTION_ID)
                 .message(INDEX_DELETE_RECORDS_SUCCESS)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexDeleteRecordFailEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_DELETE_RECORD.getRequiredGroups(), AuditStatus.FAILURE, INDEX_DELETE_RECORD_ACTION_ID)
                 .action(AuditAction.DELETE)
-                .status(AuditStatus.FAILURE)
-                .actionId(INDEX_DELETE_RECORD_ACTION_ID)
                 .message(INDEX_DELETE_RECORDS_FAILURE)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexDeleteFailEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.DELETE_INDEX.getRequiredGroups(), AuditStatus.FAILURE, INDEX_DELETE_ACTION_ID)
                 .action(AuditAction.DELETE)
-                .status(AuditStatus.FAILURE)
-                .actionId(INDEX_DELETE_ACTION_ID)
                 .message(INDEX_DELETE_FAILURE)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexDeleteSuccessEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.DELETE_INDEX.getRequiredGroups(), AuditStatus.SUCCESS, INDEX_DELETE_ACTION_ID)
                 .action(AuditAction.DELETE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(INDEX_DELETE_ACTION_ID)
                 .message(INDEX_DELETE_SUCCESS)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexPurgeRecordSuccessEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_PURGE_RECORD.getRequiredGroups(), AuditStatus.SUCCESS, INDEX_PURGE_RECORD_ACTION_ID)
                 .action(AuditAction.DELETE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(INDEX_PURGE_RECORD_ACTION_ID)
                 .message(INDEX_DELETE_RECORDS_SUCCESS)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexPurgeRecordFailEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_PURGE_RECORD.getRequiredGroups(), AuditStatus.FAILURE, INDEX_PURGE_RECORD_ACTION_ID)
                 .action(AuditAction.DELETE)
-                .status(AuditStatus.FAILURE)
-                .actionId(INDEX_PURGE_RECORD_ACTION_ID)
                 .message(INDEX_DELETE_RECORDS_FAILURE)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_STARTED.getRequiredGroups(), AuditStatus.SUCCESS, INDEX_STARTED_ACTION_ID)
                 .action(AuditAction.CREATE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(INDEX_STARTED_ACTION_ID)
                 .message(INDEX_STARTED_OPERATION)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getReindexEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.REINDEX_KIND.getRequiredGroups(), AuditStatus.SUCCESS, REINDEX_KIND_ACTION_ID)
                 .action(AuditAction.CREATE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(REINDEX_KIND_ACTION_ID)
                 .message(REINDEX_KIND_OPERATION)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getReindexRecordsEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.REINDEX_RECORDS.getRequiredGroups(), AuditStatus.SUCCESS, REINDEX_RECORDS_ACTION_ID)
                 .action(AuditAction.CREATE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(REINDEX_RECORDS_ACTION_ID)
                 .message(REINDEX_RECORDS_OPERATION)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getCopyIndexEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.COPY_INDEX.getRequiredGroups(), AuditStatus.SUCCESS, COPY_INDEX_ACTION_ID)
                 .action(AuditAction.CREATE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(COPY_INDEX_ACTION_ID)
                 .message(COPY_INDEX_OPERATION)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getTaskStatusEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.GET_TASK_STATUS.getRequiredGroups(), AuditStatus.SUCCESS, GET_TASK_STATUS_ACTION_ID)
                 .action(AuditAction.READ)
-                .status(AuditStatus.SUCCESS)
-                .actionId(GET_TASK_STATUS_ACTION_ID)
                 .message(GET_TASK_STATUS_OPERATION)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexCleanUpJobRunEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.INDEX_CLEANUP_JOB_RUN.getRequiredGroups(), AuditStatus.SUCCESS, RUN_JOB_ACTION_ID)
                 .action(AuditAction.JOB_RUN)
-                .status(AuditStatus.SUCCESS)
-                .user(this.user)
-                .actionId(RUN_JOB_ACTION_ID)
                 .message(RUN_JOB_MESSAGE_SUCCESS)
                 .resources(resources)
                 .build();
     }
 
     public AuditPayload getConfigurePartitionEvent(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.CONFIGURE_PARTITION.getRequiredGroups(), AuditStatus.SUCCESS, CONFIGURE_PARTITION_ACTION_ID)
                 .action(AuditAction.UPDATE)
-                .status(AuditStatus.SUCCESS)
-                .actionId(CONFIGURE_PARTITION_ACTION_ID)
                 .message(CONFIGURE_PARTITION_OPERATION)
                 .resources(resources)
-                .user(this.user)
                 .build();
     }
 
     public AuditPayload getIndexMappingUpsertEvent(List<String> resources, boolean isSuccess) {
         if (isSuccess) {
-            return AuditPayload.builder()
+            return createAuditPayloadBuilder(AuditOperation.INDEX_MAPPING_UPSERT.getRequiredGroups(), AuditStatus.SUCCESS, INDEX_MAPPING_UPDATE_ACTION_ID)
                     .action(AuditAction.UPDATE)
-                    .status(AuditStatus.SUCCESS)
-                    .actionId(INDEX_MAPPING_UPDATE_ACTION_ID)
                     .message(INDEX_MAPPING_UPDATE_SUCCESS)
                     .resources(resources)
-                    .user(this.user)
                     .build();
         } else {
-            return AuditPayload.builder()
+            return createAuditPayloadBuilder(AuditOperation.INDEX_MAPPING_UPSERT.getRequiredGroups(), AuditStatus.FAILURE, INDEX_MAPPING_UPDATE_ACTION_ID)
                     .action(AuditAction.UPDATE)
-                    .status(AuditStatus.FAILURE)
-                    .actionId(INDEX_MAPPING_UPDATE_ACTION_ID)
                     .message(INDEX_MAPPING_UPDATE_FAILURE)
                     .resources(resources)
-                    .user(this.user)
                     .build();
         }
     }
