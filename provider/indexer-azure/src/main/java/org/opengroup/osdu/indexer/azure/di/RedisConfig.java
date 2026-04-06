@@ -14,81 +14,85 @@
 
 package org.opengroup.osdu.indexer.azure.di;
 
-import com.azure.security.keyvault.secrets.SecretClient;
-import org.opengroup.osdu.azure.KeyVaultFacade;
+import org.opengroup.osdu.azure.di.RedisAzureConfiguration;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
-import jakarta.inject.Named;
-
-@Configuration
+/**
+ * Centralized Redis configuration using @Value annotations.
+ * This provides a single source of truth for all Redis-related settings.
+ */
+@Component
 public class RedisConfig {
 
     @Value("${redis.port:6380}")
     private int port;
 
+    @Value("${redis.database}")
+    private int database;
+
+    @Value("${redis.connection.timeout:15}")
+    private int connectionTimeout;
+
+    @Value("${redis.command.timeout:5}")
+    private int commandTimeout;
+
+    @Value("${redis.principal.id:#{null}}")
+    private String principalId;
+
+    @Value("${redis.hostname:#{null}}")
+    private String hostname;
+
     @Value("${redis.index.ttl:3600}")
-    public int indexRedisTtl;
+    private int indexRedisTtl;
 
     // Azure service account id_token can be requested only for 1 hr
     @Value("${redis.jwt.ttl:3540}")
-    public int jwtTtl;
+    private int jwtTtl;
 
     @Value("${redis.schema.ttl:3600}")
-    public int schemaTtl;
+    private int schemaTtl;
 
     @Value("${redis.records.ttl:120}")
-    public int recordsTtl;
+    private int recordsTtl;
 
     @Value("${redis.record.change.info.ttl:3600}")
-    public int recordChangeInfoTtl;
+    private int recordChangeInfoTtl;
 
-    @Bean
-    @Named("REDIS_PORT")
-    public int getRedisPort() {
-        return port;
-    }
-
-    @Bean
-    @Named("INDEX_REDIS_TTL")
     public int getIndexRedisTtl() {
         return indexRedisTtl;
     }
 
-    @Bean
-    @Named("JWT_REDIS_TTL")
-    public int getJwtRedisTtl() {
+    public int getJwtTtl() {
         return jwtTtl;
     }
 
-    @Bean
-    @Named("SCHEMA_REDIS_TTL")
-    public int getSchemaRedisTtl() {
+    public int getSchemaTtl() {
         return schemaTtl;
     }
 
-    @Bean
-    @Named("RECORDS_REDIS_TTL")
-    public int getRecordsRedisTtl() {
+    public int getRecordsTtl() {
         return recordsTtl;
     }
 
-    @Bean
-    @Named("RECORD_CHANGE_INFO_REDIS_TTL")
-    public int getRecordChangeInfoRedisTtl() {
+    public int getRecordChangeInfoTtl() {
         return recordChangeInfoTtl;
     }
 
-    @Bean
-    @Named("REDIS_HOST")
-    public String redisHost(SecretClient kv) {
-        return KeyVaultFacade.getSecretWithValidation(kv, "redis-hostname");
-    }
-
-    @Bean
-    @Named("REDIS_PASSWORD")
-    public String redisPassword(SecretClient kv) {
-        return KeyVaultFacade.getSecretWithValidation(kv, "redis-password");
+    /**
+     * Creates a RedisAzureConfiguration with the specified TTL.
+     *
+     * @param ttl The time-to-live value in seconds
+     * @return A configured RedisAzureConfiguration instance
+     */
+    public RedisAzureConfiguration createConfiguration(int ttl) {
+        return new RedisAzureConfiguration(
+            database,
+            ttl,
+            port,
+            connectionTimeout,
+            commandTimeout,
+            principalId,
+            hostname);
     }
 }

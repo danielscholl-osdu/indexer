@@ -1,135 +1,64 @@
-/*
- * Copyright 2017-2025, Microsoft
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.opengroup.osdu.indexer.azure.di;
 
-import com.azure.security.keyvault.secrets.SecretClient;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.azure.KeyVaultFacade;
-import org.springframework.beans.factory.annotation.Value;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.opengroup.osdu.azure.di.RedisAzureConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@RunWith(MockitoJUnitRunner.class)
 public class RedisConfigTest {
-    @Value("5000")
-    private int port;
 
-    @Value("4000")
-    public int indexRedisTtl;
+    @ParameterizedTest(name = "{0} should return {1}")
+    @CsvSource({
+        "indexRedisTtl, 4000",
+        "jwtTtl, 3000",
+        "schemaTtl, 2000",
+        "recordsTtl, 500",
+        "recordChangeInfoTtl, 200"
+    })
+    public void shouldReturnCorrectTtlValue(String fieldName, int testValue) {
+        RedisConfig config = new RedisConfig();
+        ReflectionTestUtils.setField(config, fieldName, testValue);
 
-    @Value("3000")
-    public int jwtTtl;
+        int result = switch (fieldName) {
+            case "indexRedisTtl" -> config.getIndexRedisTtl();
+            case "jwtTtl" -> config.getJwtTtl();
+            case "schemaTtl" -> config.getSchemaTtl();
+            case "recordsTtl" -> config.getRecordsTtl();
+            case "recordChangeInfoTtl" -> config.getRecordChangeInfoTtl();
+            default -> throw new IllegalArgumentException("Unknown field: " + fieldName);
+        };
 
-    @Value("2000")
-    public int schemaTtl;
-
-    @Value("500")
-    public int recordChangeInfoTtl;
-
-    @Value("200")
-    public int recordsTtl;
-
-    @InjectMocks
-    public RedisConfig sut;
-
-    @Mock
-    SecretClient secretClient;
-
-    public void setup()
-    {
-        MockitoAnnotations.openMocks(RedisConfigTest.this);
+        assertEquals(testValue, result);
     }
 
-    @Test
-    public void  shouldReturnPort_whenGetRedisPortCalled() {
-        int port_val = sut.getRedisPort();
-        assertEquals(port_val, port);
-    }
+    @ParameterizedTest(name = "hostname={0}, principalId={1}")
+    @CsvSource(value = {
+        "primary.redis.example.com, test-principal-id",
+        "primary.redis.example.com, NULL",
+        "NULL, test-principal-id",
+        "NULL, NULL"
+    }, nullValues = "NULL")
+    public void shouldCreateConfiguration_withVariousHostnameAndPrincipalIdCombinations(String hostname, String principalId) {
+        RedisConfig config = new RedisConfig();
+        ReflectionTestUtils.setField(config, "database", 1);
+        ReflectionTestUtils.setField(config, "port", 6380);
+        ReflectionTestUtils.setField(config, "connectionTimeout", 15);
+        ReflectionTestUtils.setField(config, "commandTimeout", 5);
+        ReflectionTestUtils.setField(config, "principalId", principalId);
+        ReflectionTestUtils.setField(config, "hostname", hostname);
 
-    @Test
-    public void shouldReturnSetValue_when_GetIndexRedisTtl_isCalled() {
-        int indexRedisTtl_val = sut.getIndexRedisTtl();
-        assertEquals(indexRedisTtl_val, indexRedisTtl);
-    }
+        RedisAzureConfiguration result = config.createConfiguration(3600);
 
-    @Test
-    public void shouldReturnSetValue_when_GetJwtRedisTtl_isCalled() {
-        int jwtTtl_val = sut.getJwtRedisTtl();
-        assertEquals(jwtTtl_val, jwtTtl);
-    }
-
-    @Test
-    public void shouldReturnSetValue_when_GetSchemaRedisTtl_isCalled() {
-        int schemaTtl_val = sut.getSchemaRedisTtl();
-        assertEquals(schemaTtl_val, schemaTtl);
-    }
-
-    @Test
-    public void shouldReturnRedisHostFromKeyVault_when_redisHostIsCalled() {
-        try (MockedStatic<KeyVaultFacade> keyVaultFacadeMockedStatic = mockStatic(KeyVaultFacade.class)) {
-            // Mock the SecretClient
-            SecretClient mockedSecretClient = mock(SecretClient.class);
-
-            // Set up the static method call with arguments
-            keyVaultFacadeMockedStatic.when(() -> KeyVaultFacade.getSecretWithValidation(mockedSecretClient, "redis-hostname"))
-                    .thenReturn("host-name");
-
-
-            String result = sut.redisHost(mockedSecretClient);
-
-            // Verify the result
-            assertEquals("host-name", result);
-            //check that keyvault facade was called with our secret client for redis-hostname
-            keyVaultFacadeMockedStatic.verify(()->KeyVaultFacade.getSecretWithValidation(mockedSecretClient, "redis-hostname"));
-        }
-    }
-
-    @Test
-    public void shouldReturnRedisPasswordFromKeyvault_when_redisHostIsCalled() {
-        try (MockedStatic<KeyVaultFacade> keyVaultFacadeMockedStatic = mockStatic(KeyVaultFacade.class)) {
-            SecretClient mockedSecretClient = mock(SecretClient.class);
-
-            keyVaultFacadeMockedStatic.when(() -> KeyVaultFacade.getSecretWithValidation(mockedSecretClient, "redis-password"))
-                    .thenReturn("password");
-
-            String result = sut.redisPassword(mockedSecretClient);
-
-            assertEquals("password", result);
-            keyVaultFacadeMockedStatic.verify(()->KeyVaultFacade.getSecretWithValidation(mockedSecretClient, "redis-password"));
-        }
-    }
-
-    @Test
-    public void shouldReturnSetValue_when_GetRecordsRedisTtl_isCalled() {
-        int indexRedisTtl_val = sut.getRecordsRedisTtl();
-        assertEquals(indexRedisTtl_val, recordsTtl);
-    }
-
-    @Test
-    public void shouldReturnSetValue_when_GetRecordsChangeInfoRedisTtl_isCalled() {
-        int indexRedisTtl_val = sut.getRecordChangeInfoRedisTtl();
-        assertEquals(indexRedisTtl_val, recordChangeInfoTtl);
+        assertNotNull(result);
+        // Verify the hostname and principalId were set correctly
+        Object actualHostname = ReflectionTestUtils.getField(result, "hostname");
+        Object actualPrincipalId = ReflectionTestUtils.getField(result, "principalId");
+        assertEquals(hostname, actualHostname, 
+            "Hostname must be set correctly in the configuration");
+        assertEquals(principalId, actualPrincipalId,
+            "PrincipalId must be set correctly in the configuration");
     }
 }
