@@ -15,6 +15,7 @@
 package org.opengroup.osdu.indexer.logging;
 
 import com.google.common.collect.Lists;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,6 +25,7 @@ import org.mockito.Mock;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
@@ -31,6 +33,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 @RunWith(SpringRunner.class)
 public class AuditLoggerTest {
 
@@ -38,12 +41,20 @@ public class AuditLoggerTest {
     private JaxRsDpsLog logger;
     @Mock
     private DpsHeaders headers;
+    @Mock
+    private ObjectProvider<HttpServletRequest> requestProvider;
+    @Mock
+    private HttpServletRequest httpServletRequest;
     @InjectMocks
     private AuditLogger sut;
 
     @Before
     public void setup() {
         when(this.headers.getUserEmail()).thenReturn("testUser");
+        when(this.httpServletRequest.getRemoteAddr()).thenReturn("10.0.0.1");
+        when(this.httpServletRequest.getHeader("User-Agent")).thenReturn("TestAgent/1.0");
+        when(this.headers.getUserAuthorizedGroupName()).thenReturn("users.datalake.viewers");
+        when(this.requestProvider.getIfAvailable()).thenReturn(this.httpServletRequest);
     }
 
     @Test
@@ -230,5 +241,16 @@ public class AuditLoggerTest {
         AuditPayload payload = payloadCaptor.getValue();
         assertEquals("IN0012", ((Map) payload.get("auditLog")).get("actionId"));
         assertEquals("testUser", ((Map) payload.get("auditLog")).get("user"));
+    }
+
+    @Test
+    public void should_createAuditLogEvent_when_httpServletRequestIsNotAvailable() {
+        when(this.requestProvider.getIfAvailable()).thenReturn(null);
+        this.sut.getConfigurePartition(Lists.newArrayList("anything"));
+        ArgumentCaptor<AuditPayload> payloadCaptor = ArgumentCaptor.forClass(AuditPayload.class);
+        verify(this.logger).audit(payloadCaptor.capture());
+        AuditPayload payload = payloadCaptor.getValue();
+        assertEquals("0.0.0.0", ((Map) payload.get("auditLog")).get("userIpAddress"));
+        assertEquals("unknown", ((Map) payload.get("auditLog")).get("userAgent"));
     }
 }

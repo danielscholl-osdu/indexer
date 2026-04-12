@@ -31,36 +31,7 @@
   <properties>
       <deployment.environment>dev</deployment.environment>
       <mockito.version>3.11.2</mockito.version>
-      <netty.version>4.1.124.Final</netty.version>
-      <tomcat-core.version>10.1.48</tomcat-core.version>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-bom</artifactId>
-        <version>${netty.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>6.2.11</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-core</artifactId>
-            <version>${tomcat-core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-http2</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <!-- Internal packages -->
@@ -122,22 +93,18 @@
       <dependency>
           <groupId>org.springframework.security</groupId>
           <artifactId>spring-security-crypto</artifactId>
-          <version>6.3.8</version>
       </dependency>
     <dependency>
         <groupId>org.springframework.security</groupId>
         <artifactId>spring-security-web</artifactId>
-        <version>6.3.4</version>
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-autoconfigure</artifactId>
-        <version>3.3.11</version>
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-        <version>3.3.11</version>
     </dependency>
     <dependency>
         <groupId>org.springframework</groupId>
