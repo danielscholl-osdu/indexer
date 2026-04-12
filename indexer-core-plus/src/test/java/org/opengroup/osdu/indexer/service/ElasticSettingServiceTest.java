@@ -1,24 +1,27 @@
-// Copyright 2017-2019, Schlumberger
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+/*
+ *  Copyright 2020-2022 Google LLC
+ *  Copyright 2020-2022 EPAM Systems, Inc
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package org.opengroup.osdu.indexer.service;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.search.ClusterSettings;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
@@ -28,14 +31,15 @@ import org.opengroup.osdu.core.common.provider.interfaces.IElasticCredentialsCac
 import org.opengroup.osdu.core.common.provider.interfaces.IElasticRepository;
 import org.opengroup.osdu.core.common.multitenancy.ITenantInfoService;
 import org.opengroup.osdu.indexer.config.IndexerConfigurationProperties;
-import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-@RunWith(SpringRunner.class)
-public class ElasticSettingServiceTest {
+@ExtendWith(MockitoExtension.class)
+class ElasticSettingServiceTest {
 
     @Mock
     private ITenantInfoService tenantInfoService;
@@ -53,10 +57,8 @@ public class ElasticSettingServiceTest {
     private ClusterSettings clusterSettings;
     @Mock
     private DpsHeaders headersInfo;
-
     @Mock
     private JaxRsDpsLog log;
-
 
     public String GAE_SERVICE = "indexer";
 
@@ -66,20 +68,18 @@ public class ElasticSettingServiceTest {
 
     String cacheKey = "";
 
-
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         when(tenantInfo.getName()).thenReturn("tenant1");
-        when(this.headersInfo.getPartitionId()).thenReturn("tenant1");
-        when(this.tenantInfoService.getTenantInfo()).thenReturn(tenantInfo);
-        when(configurationProperties.getGaeService()).thenReturn("indexer");
+        lenient().when(this.tenantInfoService.getTenantInfo()).thenReturn(tenantInfo);
+        lenient().when(this.headersInfo.getPartitionId()).thenReturn("tenant1");
+        lenient().when(configurationProperties.getGaeService()).thenReturn("indexer");
         clusterSettings = ClusterSettings.builder().host(host).port(port).userNameAndPassword(credentials).build();
         cacheKey = String.format("%s-%s", GAE_SERVICE, tenantInfo.getName());
     }
 
     @Test
-    public void should_getValid_clusterSettings_fromCache() {
-
+    void should_getValid_clusterSettings_fromCache() {
         when(this.elasticCredentialCache.get(cacheKey)).thenReturn(clusterSettings);
 
         ClusterSettings response = this.sut.getElasticClusterInformation();
@@ -90,10 +90,8 @@ public class ElasticSettingServiceTest {
     }
 
     @Test
-    public void should_getValid_clusterSettings_fromCosmosDB() {
-
-        when(this.elasticCredentialCache.get(cacheKey)).thenReturn(clusterSettings);
-
+    void should_getValid_clusterSettings_fromCosmosDB() {
+        // No cache hit — falls through to repository
         when(this.elasticRepository.getElasticClusterSettings(tenantInfo)).thenReturn(clusterSettings);
 
         ClusterSettings response = this.sut.getElasticClusterInformation();
@@ -103,12 +101,10 @@ public class ElasticSettingServiceTest {
         assertEquals(response.getUserNameAndPassword(), credentials);
     }
 
-    @Test(expected = AppException.class)
-    public void should_throwAppException_when_tenantClusterInfo_not_found() throws AppException {
-
+    @Test
+    void should_throwAppException_when_tenantClusterInfo_not_found() {
         when(this.elasticRepository.getElasticClusterSettings(tenantInfo)).thenReturn(null);
 
-        this.sut.getElasticClusterInformation();
-
+        assertThrows(AppException.class, () -> this.sut.getElasticClusterInformation());
     }
 }

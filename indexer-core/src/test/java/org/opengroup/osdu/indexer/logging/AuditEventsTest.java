@@ -28,15 +28,28 @@ import static org.junit.Assert.assertEquals;
 @RunWith(SpringRunner.class)
 public class AuditEventsTest {
 
-    @Test(expected = IllegalArgumentException.class)
-    public void should_throwException_when_creatingAuditEventsWithoutUser() {
-        new AuditEvents(null);
+    private static final String TEST_USER = "testUser";
+    private static final String TEST_IP = "10.0.0.1";
+    private static final String TEST_AGENT = "TestAgent/1.0";
+    private static final String TEST_GROUP = "users.datalake.viewers";
+
+    private AuditEvents createAuditEvents() {
+        return new AuditEvents(TEST_USER, TEST_IP, TEST_AGENT, TEST_GROUP);
+    }
+
+    @Test
+    public void should_useGracefulDefaults_when_creatingAuditEventsWithNullUser() {
+        AuditEvents events = new AuditEvents(null, null, null, null);
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        Map<String, String> payload = (Map) events.getIndexCreateRecordSuccessEvent(Lists.newArrayList("anything"))
+                .get("auditLog");
+        assertEquals("unknown", payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexCreateRecordEventSuccess() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexCreateRecordSuccessEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -44,13 +57,13 @@ public class AuditEventsTest {
         assertEquals("Successfully created record in index", payload.get("message"));
         assertEquals(AuditAction.CREATE, payload.get("action"));
         assertEquals("IN001", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexCreateRecordEventFail() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexCreateRecordFailEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -58,13 +71,13 @@ public class AuditEventsTest {
         assertEquals("Failed creating record in index", payload.get("message"));
         assertEquals(AuditAction.CREATE, payload.get("action"));
         assertEquals("IN001", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexUpdateRecordEventSuccess() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexUpdateRecordSuccessEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -72,13 +85,13 @@ public class AuditEventsTest {
         assertEquals("Successfully updated record in index", payload.get("message"));
         assertEquals(AuditAction.UPDATE, payload.get("action"));
         assertEquals("IN002", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexUpdateRecordEventFail() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexUpdateRecordFailEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -86,13 +99,13 @@ public class AuditEventsTest {
         assertEquals("Failed updating record in index", payload.get("message"));
         assertEquals(AuditAction.UPDATE, payload.get("action"));
         assertEquals("IN002", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexDeleteRecordEventSuccess() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexDeleteRecordSuccessEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -100,13 +113,13 @@ public class AuditEventsTest {
         assertEquals("Successfully deleted record in index", payload.get("message"));
         assertEquals(AuditAction.DELETE, payload.get("action"));
         assertEquals("IN003", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexDeleteRecordEventFail() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexDeleteRecordFailEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -114,13 +127,13 @@ public class AuditEventsTest {
         assertEquals("Failed deleting record in index", payload.get("message"));
         assertEquals(AuditAction.DELETE, payload.get("action"));
         assertEquals("IN003", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexPurgeRecordEventSuccess() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexPurgeRecordSuccessEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -128,13 +141,13 @@ public class AuditEventsTest {
         assertEquals("Successfully deleted record in index", payload.get("message"));
         assertEquals(AuditAction.DELETE, payload.get("action"));
         assertEquals("IN004", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexPurgeRecordEventFail() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexPurgeRecordFailEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -142,13 +155,13 @@ public class AuditEventsTest {
         assertEquals("Failed deleting record in index", payload.get("message"));
         assertEquals(AuditAction.DELETE, payload.get("action"));
         assertEquals("IN004", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getReindexEvent() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getReindexEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -156,13 +169,13 @@ public class AuditEventsTest {
         assertEquals("Reindex kind", payload.get("message"));
         assertEquals(AuditAction.CREATE, payload.get("action"));
         assertEquals("IN007", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getCopyIndexEvent() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getCopyIndexEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -170,13 +183,13 @@ public class AuditEventsTest {
         assertEquals("Copy index", payload.get("message"));
         assertEquals(AuditAction.CREATE, payload.get("action"));
         assertEquals("IN008", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void getTaskStatusEvent() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getTaskStatusEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -184,13 +197,13 @@ public class AuditEventsTest {
         assertEquals("Get task status", payload.get("message"));
         assertEquals(AuditAction.READ, payload.get("action"));
         assertEquals("IN009", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexCleanUpJobRunEvent() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getIndexCleanUpJobRunEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -198,41 +211,41 @@ public class AuditEventsTest {
         assertEquals("Index clean-up status job run success", payload.get("message"));
         assertEquals(AuditAction.JOB_RUN, payload.get("action"));
         assertEquals("IN010", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexMappingUpdateEventSuccess() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
-        Map<String, String> payload = (Map) auditEvent.getIndexMappingUpsertEvent(Lists.newArrayList("anything"),true)
+        AuditEvents auditEvent = createAuditEvents();
+        Map<String, String> payload = (Map) auditEvent.getIndexMappingUpsertEvent(Lists.newArrayList("anything"), true)
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
         assertEquals(AuditStatus.SUCCESS, payload.get("status"));
         assertEquals("Successfully upserted index mapping", payload.get("message"));
         assertEquals(AuditAction.UPDATE, payload.get("action"));
         assertEquals("IN0011", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getIndexMappingUpdateEventFail() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
-        Map<String, String> payload = (Map) auditEvent.getIndexMappingUpsertEvent(Lists.newArrayList("anything"),false)
+        AuditEvents auditEvent = createAuditEvents();
+        Map<String, String> payload = (Map) auditEvent.getIndexMappingUpsertEvent(Lists.newArrayList("anything"), false)
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
         assertEquals(AuditStatus.FAILURE, payload.get("status"));
         assertEquals("Failed upserting index mapping", payload.get("message"));
         assertEquals(AuditAction.UPDATE, payload.get("action"));
         assertEquals("IN0011", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_getConfigurePartitionEvent() {
-        AuditEvents auditEvent = new AuditEvents("testUser");
+        AuditEvents auditEvent = createAuditEvents();
         Map<String, String> payload = (Map) auditEvent.getConfigurePartitionEvent(Lists.newArrayList("anything"))
                 .get("auditLog");
         assertEquals(Lists.newArrayList("anything"), payload.get("resources"));
@@ -240,6 +253,6 @@ public class AuditEventsTest {
         assertEquals("Data partition cluster configuration update", payload.get("message"));
         assertEquals(AuditAction.UPDATE, payload.get("action"));
         assertEquals("IN0012", payload.get("actionId"));
-        assertEquals("testUser", payload.get("user"));
+        assertEquals(TEST_USER, payload.get("user"));
     }
 }
