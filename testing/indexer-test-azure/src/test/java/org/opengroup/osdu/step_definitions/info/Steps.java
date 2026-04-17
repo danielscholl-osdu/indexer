@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025, Microsoft
+ * Copyright 2017-2025, The Open Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.step_definitions.info;
 
-import cucumber.api.Scenario;
-import cucumber.api.java.Before;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.java.Scenario;
+import io.cucumber.java.Before;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import org.opengroup.osdu.common.info.InfoSteps;
 import org.opengroup.osdu.util.AzureHTTPClient;
 import org.opengroup.osdu.util.Config;

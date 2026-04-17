@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.util;
 
 import org.opengroup.osdu.models.schema.SchemaIdentity;
@@ -57,19 +56,19 @@ public class SchemaServiceClient {
         return response.getStatusCode() == HttpStatus.OK;
     }
 
-    public void create(SchemaModel schema) {
+    public void createOrUpdate(SchemaModel schema) {
         String uri = buildSchemaUri();
-        LOGGER.log(Level.INFO, "Creating the schema={0}", schema);
+        LOGGER.log(Level.INFO, "Creating or updating the schema={0}", schema);
         HttpHeaders headers = new HttpHeaders();
         headers.put(HttpHeaders.CONTENT_TYPE, singletonList(MediaType.APPLICATION_JSON_VALUE));
         HttpEntity<SchemaModel> httpEntity = new HttpEntity<>(schema, headers);
         template.exchange(uri, HttpMethod.PUT, httpEntity, Object.class);
-        LOGGER.log(Level.INFO, "Finished creating the schema={0}", schema);
+        LOGGER.log(Level.INFO, "Finished creating or updating the schema={0}", schema);
     }
 
     public void createIfNotExist(SchemaModel schema) {
         if (!exists(schema.getSchemaInfo().getSchemaIdentity())) {
-            create(schema);
+            createOrUpdate(schema);
         }
     }
 

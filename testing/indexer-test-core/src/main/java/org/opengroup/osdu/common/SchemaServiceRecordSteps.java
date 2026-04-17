@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.common;
 
-import cucumber.api.DataTable;
-import cucumber.api.java.en.Then;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.en.Then;
 import org.opengroup.osdu.models.Setup;
 import org.opengroup.osdu.models.schema.PersistentSchemaTestIndex;
 import org.opengroup.osdu.util.ElasticUtils;
 import org.opengroup.osdu.util.HTTPClient;
+import org.opengroup.osdu.models.TestIndex;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +41,11 @@ public class SchemaServiceRecordSteps extends RecordSteps {
         }
     }
 
+    public void the_schema_is_updated_with_the_following_kind(DataTable dataTable) {
+        List<Setup> inputList = dataTable.asList(Setup.class);
+        inputList.forEach(this::updateSchema);
+    }
+
     public void i_set_scenarios_as_stateful(boolean stateful) throws Throwable {
         SchemaServiceRecordSteps.runStatefulScenario = stateful;
     }
@@ -58,13 +63,30 @@ public class SchemaServiceRecordSteps extends RecordSteps {
         deleteIndex(testIndex.getKind());
     }
 
-    private void deleteIndex(String kind) {
-        this.indexerClientUtil.deleteIndex(kind);
+    private void updateSchema(Setup input) {
+        String actualKind = generateActualName(input.getKind(), super.getTimeStamp());
+
+        // Retrieve the existing TestIndex from the map
+        Map<String, TestIndex> indexMap = super.getInputIndexMap();
+        TestIndex existingTestIndex = indexMap.get(actualKind);
+
+        if (existingTestIndex == null) {
+            throw new AssertionError("Cannot update schema - TestIndex not found for kind: " + actualKind);
+        }
+
+        if (!(existingTestIndex instanceof PersistentSchemaTestIndex)) {
+            throw new AssertionError("Cannot update schema - TestIndex is not a PersistentSchemaTestIndex");
+        }
+
+        PersistentSchemaTestIndex testIndex = (PersistentSchemaTestIndex) existingTestIndex;
+
+        // Update the schema file reference and force schema update
+        testIndex.setSchemaFile(input.getSchemaFile());
+        testIndex.updateSchema();
     }
 
-    @Override
-    protected String generateRecordId(Map<String, Object> testRecord) {
-        return generateActualIdWithoutTs(testRecord.get("id").toString(), testRecord.get("kind").toString());
+    private void deleteIndex(String kind) {
+        this.indexerClientUtil.deleteIndex(kind);
     }
 
     @Override

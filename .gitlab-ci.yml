@@ -90,6 +90,7 @@ include:
 
   - local: "devops/gc/pipeline/override-stages.yml"
   - local: "devops/aws/pipeline/override-stages.yml"
+  - local: "devops/ibm/pipeline/override-stages.yml"
   - local: "devops/core-plus/pipeline/override-stages.yml"
 
 download_plugins:

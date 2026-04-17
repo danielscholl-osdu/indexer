@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.util;
 
-import com.sun.jersey.api.client.ClientResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.java.Log;
 
-import javax.ws.rs.HttpMethod;
 import java.util.Map;
 
 import static org.opengroup.osdu.util.Config.getIndexerBaseURL;
@@ -29,6 +27,7 @@ public class IndexerClientUtil {
 
     private final HTTPClient httpClient;
     private Map<String, String> headers;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public IndexerClientUtil(HTTPClient httpClient) {
         this.httpClient = httpClient;
@@ -38,7 +37,50 @@ public class IndexerClientUtil {
     public void deleteIndex(String kind) {
         String url = getIndexerBaseURL() + "index?kind=" + kind;
         log.info("URL: " + url);
-        ClientResponse response = httpClient.send(HttpMethod.DELETE, url, "", headers, httpClient.getAccessToken());
+        HttpResponse response = httpClient.send("DELETE", url, "", headers, httpClient.getAccessToken());
         log.info(response.toString());
-    }  
+    }
+
+    /**
+     * Trigger a schema update for a given kind
+     * @param kind the kind to update schema for
+     * @param schemaUpdate the schema update request
+     */
+    public void triggerSchemaUpdate(String kind, Map<String, Object> schemaUpdate) throws Exception {
+        String url = getIndexerBaseURL() + "_dps/task-handlers/schema-worker";
+        log.info("Triggering schema update for kind: " + kind);
+
+        String requestBody = objectMapper.writeValueAsString(Map.of(
+            "kind", kind,
+            "op", "upsert",
+            "schema", schemaUpdate
+        ));
+
+        HttpResponse response = httpClient.send("POST", url, requestBody, headers, httpClient.getAccessToken());
+
+        if (response.getStatus() != 200 && response.getStatus() != 201 && response.getStatus() != 202) {
+            throw new RuntimeException("Schema update failed with status: " + response.getStatus());
+        }
+
+        log.info("Schema update triggered successfully for kind: " + kind);
+    }
+
+    /**
+     * Ingest a record into the index
+     * @param record the record to ingest
+     */
+    public void ingestRecord(Map<String, Object> record) throws Exception {
+        String url = getIndexerBaseURL() + "records";
+        log.info("Ingesting record: " + record.get("id"));
+
+        String requestBody = objectMapper.writeValueAsString(new Map[]{record});
+
+        HttpResponse response = httpClient.send("POST", url, requestBody, headers, httpClient.getAccessToken());
+
+        if (response.getStatus() != 200 && response.getStatus() != 201 && response.getStatus() != 202) {
+            throw new RuntimeException("Record ingestion failed with status: " + response.getStatus());
+        }
+
+        log.info("Record ingested successfully: " + record.get("id"));
+    }
 }

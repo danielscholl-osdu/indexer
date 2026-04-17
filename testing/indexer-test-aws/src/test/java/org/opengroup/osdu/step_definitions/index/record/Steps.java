@@ -20,18 +20,21 @@ import lombok.extern.java.Log;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.util.AWSHTTPClient;
 
-import cucumber.api.Scenario;
-import cucumber.api.java.Before;
-import cucumber.api.DataTable;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.DataTableType;
+import io.cucumber.java.Scenario;
+import io.cucumber.java.Before;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.opengroup.osdu.common.SchemaServiceRecordSteps;
+import org.opengroup.osdu.models.Setup;
 import org.opengroup.osdu.util.ElasticUtilsAws;
 import org.opengroup.osdu.util.LegalTagUtilsAws;
-import org.opengroup.osdu.common.SchemaServiceRecordSteps;
 
 import java.util.concurrent.TimeUnit;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.opengroup.osdu.util.Config.getOtherRelevantDataCountries;
@@ -73,6 +76,20 @@ public class Steps extends SchemaServiceRecordSteps {
         return legal;
     }
 
+    @DataTableType
+    public Setup setupEntry(Map<String, String> entry) {
+        Setup setup = new Setup();
+        setup.setTenantId(entry.get("tenantId"));
+        setup.setKind(entry.get("kind"));
+        setup.setIndex(entry.get("index"));
+        setup.setViewerGroup(entry.get("viewerGroup"));
+        setup.setOwnerGroup(entry.get("ownerGroup"));
+        setup.setMappingFile(entry.get("mappingFile"));
+        setup.setRecordFile(entry.get("recordFile"));
+        setup.setSchemaFile(entry.get("schemaFile"));
+        return setup;
+    }
+
     @Given("^the schema is created with the following kind$")
     public void the_schema_is_created_with_the_following_kind(DataTable dataTable){
         super.the_schema_is_created_with_the_following_kind(dataTable);
@@ -108,7 +125,7 @@ public class Steps extends SchemaServiceRecordSteps {
         super.i_should_not_get_any_documents_for_the_index_in_the_Elastic_Search(index);
     }
 
-    @Then("^I should get the elastic \"(.*?)\" for the \"([^\"]*)\" and \"([^\"]*)\" in the Elastic Search$")
+    @Then("^I should get the elastic (.+) for the \"([^\"]*)\" and \"([^\"]*)\" in the Elastic Search$")
     public void i_should_get_the_elastic_for_the_tenant_testindex_timestamp_well_in_the_Elastic_Search(String expectedMapping, String kind, String index) throws Throwable {
         super.i_should_get_the_elastic_for_the_tenant_testindex_timestamp_well_in_the_Elastic_Search(expectedMapping, kind, index);
     }
@@ -145,7 +162,7 @@ public class Steps extends SchemaServiceRecordSteps {
         super.i_should_get_the_documents_for_the_in_the_Elastic_Search_by_geoQuery(expectedCount, index, topLatitude, topLongitude, bottomLatitude, bottomLongitude, field);
     }
 
-    @Then("^I should be able search (\\d+) documents for the \"([^\"]*)\" by bounding box query with points \\((-?\\d+), (-?\\d+)\\) on field \"([^\"]*)\" and points \\((-?\\d+), (-?\\d+)\\) on field \"([^\"]*)\"$")
+    @Then("^I should be able search (\\d+) documents for the \"([^\"]*)\" by bounding box query with points \\((-?[\\d.]+), (-?[\\d.]+)\\) on field \"([^\"]*)\" and points \\((-?[\\d.]+), (-?[\\d.]+)\\) on field \"([^\"]*)\"$")
     public void i_should_get_the_documents_for_the_in_the_Elastic_Search_by_AsIngestedCoordinates (
             int expectedCount, String index, Double topPointX, Double bottomPointX, String pointX, Double topPointY, Double bottomPointY, String pointY) throws Throwable {
         TimeUnit.SECONDS.sleep(30);

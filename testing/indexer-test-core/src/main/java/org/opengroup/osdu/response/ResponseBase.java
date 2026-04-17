@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.response;
 
 import lombok.Data;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.List;
+import java.util.Map;
 
 @Data
 public abstract class ResponseBase {
     private int responseCode;
-    private MultivaluedMap<String, String> headers;
+    private Map<String, List<String>> headers;
 }
