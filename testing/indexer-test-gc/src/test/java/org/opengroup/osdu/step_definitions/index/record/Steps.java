@@ -16,23 +16,41 @@
 
 package org.opengroup.osdu.step_definitions.index.record;
 
-import cucumber.api.DataTable;
-import cucumber.api.Scenario;
-import cucumber.api.java.Before;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.DataTableType;
+import io.cucumber.java.Scenario;
+import io.cucumber.java.Before;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.common.SchemaServiceRecordSteps;
+import org.opengroup.osdu.models.Setup;
 import org.opengroup.osdu.util.ElasticUtils;
 import org.opengroup.osdu.util.GCConfig;
 import org.opengroup.osdu.util.GCPHTTPClient;
+
+import java.util.Map;
 
 @Log
 public class Steps extends SchemaServiceRecordSteps {
 
     public Steps() {
         super(new GCPHTTPClient(), new ElasticUtils());
+    }
+
+    @DataTableType
+    public Setup setupEntry(Map<String, String> entry) {
+        Setup setup = new Setup();
+        setup.setTenantId(entry.get("tenantId"));
+        setup.setKind(entry.get("kind"));
+        setup.setIndex(entry.get("index"));
+        setup.setViewerGroup(entry.get("viewerGroup"));
+        setup.setOwnerGroup(entry.get("ownerGroup"));
+        setup.setMappingFile(entry.get("mappingFile"));
+        setup.setRecordFile(entry.get("recordFile"));
+        setup.setSchemaFile(entry.get("schemaFile"));
+        return setup;
     }
 
     @Before
@@ -153,7 +171,7 @@ public class Steps extends SchemaServiceRecordSteps {
         super.i_should_get_object_in_search_response(innerField, index);
     }
 
-    @Then("^I should be able search (\\d+) documents for the \"([^\"]*)\" by bounding box query with points \\((-?\\d+), (-?\\d+)\\) on field \"([^\"]*)\" and points \\((-?\\d+), (-?\\d+)\\) on field \"([^\"]*)\"$")
+    @Then("^I should be able search (\\d+) documents for the \"([^\"]*)\" by bounding box query with points \\((-?[\\d.]+), (-?[\\d.]+)\\) on field \"([^\"]*)\" and points \\((-?[\\d.]+), (-?[\\d.]+)\\) on field \"([^\"]*)\"$")
     public void i_should_get_the_documents_for_the_in_the_Elastic_Search_by_AsIngestedCoordinates (
             int expectedCount, String index, Double topPointX, Double bottomPointX, String pointX, Double topPointY, Double bottomPointY, String pointY) throws Throwable {
         super.i_should_get_the_documents_for_the_in_the_Elastic_Search_by_AsIngestedCoordinates(expectedCount, index, topPointX, bottomPointX, pointX, topPointY, bottomPointY, pointY);

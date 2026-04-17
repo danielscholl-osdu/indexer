@@ -142,7 +142,6 @@ public class IndexerServiceImplTest {
     private final String recordId4 = "opendes:doc:test4";
     private final String recordId5 = "opendes:doc:test5";
     private final String failureMassage = "test failure";
-    private final String badRequestMessage = "Elasticsearch exception [type=mapper_parsing_exception, reason=failed to parse field [data.SpatialLocation.Wgs84Coordinates] of type [geo_shape]]";
 
     private DpsHeaders dpsHeaders;
     private RecordChangedMessages recordChangedMessages;
@@ -227,7 +226,7 @@ public class IndexerServiceImplTest {
                     "RecordStatus(id=opendes:doc:test2, kind=opendes:testindexer2:well:1.0.0, operationType=create, status=SUCCESS)",
                     "RecordStatus(id=opendes:doc:test4, kind=osdu:wks:reference-data--IndexPropertyPathConfiguration:1.0.0, operationType=create, status=SUCCESS)"));
             verify(this.auditLogger).indexCreateRecordFail(Arrays.asList(
-                    "RecordStatus(id=opendes:doc:test3, kind=opendes:testindexer2:well:1.0.0, operationType=create, status=FAIL, message=Elasticsearch exception [type=mapper_parsing_exception, reason=failed to parse field [data.SpatialLocation.Wgs84Coordinates] of type [geo_shape]])",
+                    "RecordStatus(id=opendes:doc:test3, kind=opendes:testindexer2:well:1.0.0, operationType=create, status=FAIL, message=[type=mapper_parsing_exception, reason=failed to parse field [data.SpatialLocation.Wgs84Coordinates] of type [geo_shape]])",
                     "RecordStatus(id=opendes:doc:test5, kind=opendes:testindexer4:well:1.0.0, operationType=create, status=FAIL, message=Indexed Successfully)"));
             verify(this.auditLogger).indexUpdateRecordPartialSuccess(singletonList("RecordStatus(id=opendes:doc:test1, kind=opendes:testindexer1:well:1.0.0, operationType=update, status==PARTIAL_SUCCESS, message=Indexed Successfully)"));
         } catch (Exception e) {
@@ -453,7 +452,9 @@ public class IndexerServiceImplTest {
 
     private BulkResponseItem prepareFailed400Response(String recordId) {
         BulkResponseItem responseFail = mock(BulkResponseItem.class);
-        when(responseFail.error()).thenReturn(ErrorCause.of(builder -> builder.reason(badRequestMessage)));
+        when(responseFail.error()).thenReturn(ErrorCause.of(builder -> builder
+                .type("mapper_parsing_exception")
+                .reason("failed to parse field [data.SpatialLocation.Wgs84Coordinates] of type [geo_shape]")));
         when(responseFail.status()).thenReturn(HttpStatus.SC_BAD_REQUEST);
         when(responseFail.id()).thenReturn(recordId);
         return responseFail;

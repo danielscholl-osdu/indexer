@@ -50,6 +50,7 @@ import org.opengroup.osdu.core.common.provider.interfaces.IRequestInfo;
 import org.opengroup.osdu.indexer.config.IndexerConfigurationProperties;
 import org.opengroup.osdu.indexer.model.XcollaborationHolder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.inject.Inject;
@@ -58,6 +59,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static org.opengroup.osdu.core.common.Constants.SLB_FRAME_OF_REFERENCE_VALUE;
@@ -68,6 +70,18 @@ import static org.opengroup.osdu.core.common.model.http.DpsHeaders.FRAME_OF_REFE
 public class StorageServiceImpl implements StorageService {
 
     private final Gson gson = new Gson();
+
+    @Value("${storage.retry.maxAttempts:5}")
+    int maxRetryAttempts;
+
+    @Value("${storage.retry.baseDelayMs:1000}")
+    long baseDelayMs;
+
+    @Value("${storage.retry.maxDelayMs:60000}")
+    long maxDelayMs;
+
+    @Value("${storage.retry.jitterFactor:0.5}")
+    double jitterFactor;
 
     @Inject
     private ObjectMapper objectMapper;
@@ -319,8 +333,95 @@ public class StorageServiceImpl implements StorageService {
                 .queryParams(queryParams)
                 .build();
 
-        HttpResponse response = this.urlFetchService.sendRequest(request);
-        return this.gson.fromJson(response.getBody(), RecordQueryResponse.class);
+        return executeWithRetry(request, reindexRequest.getKind());
+    }
+
+    /**
+     * Executes a storage query request with retry logic using exponential backoff and jitter.
+     * Retries on transient errors (429 Too Many Requests, 500) up to {@code maxRetryAttempts} times.
+     * Non-retryable errors (4xx other than 429) are thrown immediately.
+     */
+    private RecordQueryResponse executeWithRetry(FetchServiceHttpRequest request, String kind) throws URISyntaxException {
+        AppException lastException = null;
+        String sanitizedKind = sanitize(kind);
+
+        for (int attempt = 1; attempt <= maxRetryAttempts; attempt++) {
+            HttpResponse response = this.urlFetchService.sendRequest(request);
+
+            if (response.isSuccessCode()) {
+                if (attempt > 1) {
+                    jaxRsDpsLog.info(String.format("Storage query for kind %s succeeded on attempt %d after %d retries",
+                            sanitizedKind, attempt, attempt - 1));
+                }
+                return this.gson.fromJson(response.getBody(), RecordQueryResponse.class);
+            }
+
+            String reason = response.getResponseCode() == 429 ? "Too Many Requests" : "Storage query error";
+            String body = response.getBody();
+            String truncatedBody = sanitize((body != null && body.length() > 500) ? body.substring(0, 500) + "..." : body);
+            AppException appException = new AppException(response.getResponseCode(), reason,
+                    String.format("Storage service returned HTTP %d on cursor query for kind %s: %s",
+                            response.getResponseCode(), sanitizedKind, truncatedBody));
+
+            if (!isRetryableError(response.getResponseCode())) {
+                throw appException;
+            }
+
+            lastException = appException;
+
+            if (attempt == maxRetryAttempts) {
+                jaxRsDpsLog.error(String.format("Max retry attempts (%d) exhausted for kind %s. Last error: HTTP %d",
+                        maxRetryAttempts, sanitizedKind, response.getResponseCode()));
+                break;
+            }
+
+            long delayMs = calculateBackoffWithJitter(attempt);
+            jaxRsDpsLog.warning(String.format("Storage service returned retryable error for kind %s. " +
+                            "Attempt %d/%d failed with HTTP %d. Retrying in %d ms. Error: %s",
+                    sanitizedKind, attempt, maxRetryAttempts, response.getResponseCode(), delayMs, truncatedBody));
+
+            try {
+                Thread.sleep(delayMs);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        "Reindex interrupted",
+                        "The storage query was interrupted during retry backoff.", ie);
+            }
+        }
+
+        throw new AppException(HttpStatus.SC_SERVICE_UNAVAILABLE,
+                "Storage service unavailable",
+                String.format("Failed to query records for kind %s after %d attempts. " +
+                        "The storage service may be experiencing high load. Please retry later.",
+                        sanitizedKind, maxRetryAttempts),
+                lastException);
+    }
+
+    /**
+     * Determines if an HTTP status code represents a retryable error.
+     * 503 is intentionally excluded — it is handled by provider-level retry mechanisms.
+     */
+    private boolean isRetryableError(int statusCode) {
+        return statusCode == 429 ||
+               statusCode == HttpStatus.SC_INTERNAL_SERVER_ERROR;
+    }
+
+    /**
+     * Calculates exponential backoff delay with jitter.
+     * Formula: min(maxDelayMs, baseDelayMs * 2^(attempt-1)) * (1 + random(-jitterFactor, +jitterFactor))
+     */
+    private long calculateBackoffWithJitter(int attempt) {
+        long exponentialDelay = baseDelayMs * (1L << (attempt - 1));
+        long cappedDelay = Math.min(exponentialDelay, maxDelayMs);
+        double jitter = 1.0 + (ThreadLocalRandom.current().nextDouble() * 2 * jitterFactor - jitterFactor);
+        return (long) (cappedDelay * jitter);
+    }
+
+    /** Strips control characters (except CR, LF, TAB) from input to prevent log injection. */
+    private String sanitize(String input) {
+        if (input == null) return null;
+        return input.replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "");
     }
 
     @Override

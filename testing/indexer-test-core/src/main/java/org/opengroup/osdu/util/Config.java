@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.util;
 
 public class Config {
@@ -39,6 +38,7 @@ public class Config {
 
     private static final String SCHEMA_PATH = "/api/schema-service/v1";
     private static final String DEFAULT_SECURITY_HTTPS_CERTIFICATE_TRUST = "false";
+    private static final String DEFAULT_JWT_AUTH_ENABLED = "false";
 
 
     public static int getPort() {
@@ -117,6 +117,11 @@ public class Config {
         return getEnvironmentVariableOrDefaultValue("HOST", DEFAULT_HOST) + SCHEMA_PATH;
     }
 
+    public static String getPartitionBaseURL() {
+        return getEnvironmentVariableOrDefaultValue("PARTITION_HOST",
+            getEnvironmentVariableOrDefaultValue("HOST", DEFAULT_HOST));
+    }
+
     public static String getEntitlementsDomain() {
         return getEnvironmentVariableOrDefaultValue("ENTITLEMENTS_DOMAIN", DEFAULT_ENTITLEMENTS_DOMAIN);
     }
@@ -141,6 +146,14 @@ public class Config {
         return Boolean.parseBoolean(
             getEnvironmentVariableOrDefaultValue("SECURITY_HTTPS_CERTIFICATE_TRUST",
                 DEFAULT_SECURITY_HTTPS_CERTIFICATE_TRUST));
+    }
+
+    public static String getJwtToken() {
+        return getEnvironmentVariableOrDefaultValue("ELASTIC_JWT_TOKEN", "");
+    }
+
+    public static boolean isJwtAuthEnabled() {
+        return Boolean.parseBoolean(getEnvironmentVariableOrDefaultValue("ELASTIC_JWT_AUTH_ENABLED", DEFAULT_JWT_AUTH_ENABLED));
     }
 
     private static String getEnvironmentVariableOrDefaultValue(String key, String defaultValue) {

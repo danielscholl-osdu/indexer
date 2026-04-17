@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +35,6 @@ import org.opengroup.osdu.util.HTTPClient;
 @Slf4j
 public class InfoBase extends TestsBase {
 
-  // Feature flag property constant - matches the value used in FeatureConstants
   private static final String EXPOSE_FEATUREFLAG_ENABLED_PROPERTY = "expose_featureflag.enabled";
 
   private static final List<String> expectedFeatureFlags = List.of(
@@ -103,24 +101,22 @@ public class InfoBase extends TestsBase {
       List<FeatureFlagStateMock> featureFlagStates = response.getFeatureFlagStates();
 
       // Read the actual configuration property value to validate behavior alignment
-      // Check system property first, then fall back to environment variable
       String featureFlagExposeEnabledProperty = System.getProperty(EXPOSE_FEATUREFLAG_ENABLED_PROPERTY);
       if (featureFlagExposeEnabledProperty == null) {
           featureFlagExposeEnabledProperty = System.getenv("EXPOSE_FEATUREFLAG_ENABLED");
       }
-      boolean isFeatureFlagExposureEnabled = featureFlagExposeEnabledProperty == null || !"false".equalsIgnoreCase(featureFlagExposeEnabledProperty);
-      
-      if (!isFeatureFlagExposureEnabled)
-      {
+      boolean isFeatureFlagExposureEnabled = featureFlagExposeEnabledProperty == null
+          || !"false".equalsIgnoreCase(featureFlagExposeEnabledProperty);
+
+      if (!isFeatureFlagExposureEnabled) {
         assertNull(featureFlagStates);
-      }
-      else
-      {
+      } else {
         assertNotNull(featureFlagStates);
         assertFalse(featureFlagStates.isEmpty());
-        for (String ffName : expectedFeatureFlags){
-          assertTrue(featureFlagStates.stream().anyMatch(ffState -> ffState.getName().equals(ffName)));    
-        }    
+        for (String ffName : expectedFeatureFlags) {
+          assertTrue(featureFlagStates.stream().anyMatch(ffState -> ffState.getName().equals(ffName)),
+              "Expected feature flag not found: " + ffName);
+        }
       }
     } else {
       log.warn("Version info endpoint provided null response");

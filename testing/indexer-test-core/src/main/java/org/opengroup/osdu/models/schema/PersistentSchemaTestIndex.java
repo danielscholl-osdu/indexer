@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.models.schema;
 
 import org.opengroup.osdu.common.SchemaServiceRecordSteps;
@@ -44,13 +43,26 @@ public class PersistentSchemaTestIndex extends TestIndex {
 
     @Override
     public void setupSchema() {
+        loadAndPrepareSchema();
+        LOGGER.log(Level.INFO, "Setting up the schema={0}", schemaModel.getSchemaInfo().getSchemaIdentity());
+        schemaServiceClient.createIfNotExist(schemaModel);
+        LOGGER.log(Level.INFO, "Finished setting up the schema={0}", schemaModel.getSchemaInfo().getSchemaIdentity());
+    }
+
+    public void updateSchema() {
+        loadAndPrepareSchema();
+        LOGGER.log(Level.INFO, "Updating the schema={0}", schemaModel.getSchemaInfo().getSchemaIdentity());
+        schemaServiceClient.createOrUpdate(schemaModel);
+        LOGGER.log(Level.INFO, "Finished updating the schema={0}", schemaModel.getSchemaInfo().getSchemaIdentity());
+    }
+
+    private void loadAndPrepareSchema() {
         this.schemaModel = readSchemaFromJson();
         SchemaIdentity schemaIdentity = schemaModel.getSchemaInfo().getSchemaIdentity();
         LOGGER.log(Level.INFO, "Read the schema={0}", schemaIdentity);
         schemaIdentity.setAuthority(recordSteps.generateActualNameWithoutTs(schemaIdentity.getAuthority()));
-        LOGGER.log(Level.INFO, "Updated the schema={0}", schemaIdentity);
-        schemaServiceClient.createIfNotExist(schemaModel);
-        LOGGER.log(Level.INFO, "Finished setting up the schema={0}", schemaIdentity);
+        schemaIdentity.setSource(recordSteps.generateActualName(schemaIdentity.getSource()));
+        LOGGER.log(Level.INFO, "Prepared the schema identity={0}", schemaIdentity);
     }
 
     @Override

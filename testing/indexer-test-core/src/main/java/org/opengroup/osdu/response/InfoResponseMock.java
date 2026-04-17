@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.opengroup.osdu.response;
 
 import java.util.List;
@@ -23,7 +22,6 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class InfoResponseMock extends ResponseBase {
-
   private String groupId;
   private String artifactId;
   private String version;
