@@ -320,6 +320,80 @@ public class ElasticUtils {
         }
     }
 
+    /**
+     * Delete stale test indices older than {@code maxAgeMs} milliseconds.
+     * <p>
+     * Test indices are identified by the strict pattern {@code *-indexer\d{13,17}-*}
+     * (the digits encode the epoch-millis timestamp appended at test-run time).
+     * Index age is determined from Elasticsearch's {@code creation_date} setting,
+     * not from the name, so the decision is reliable even if naming conventions evolve.
+     * <p>
+     * This method is best-effort: all errors are logged and swallowed so that a
+     * cleanup failure never blocks the actual test run. Both open and closed indices
+     * are included (via {@code expand_wildcards=all}).
+     *
+     * @param maxAgeMs minimum age in milliseconds before an index is considered stale
+     * @return the number of indices deleted (0 on any error)
+     */
+    public int deleteStaleTestIndices(long maxAgeMs) {
+        // Strict pattern: index name must contain "-indexer" followed by 13-17 digits
+        java.util.regex.Pattern testIndexPattern =
+                java.util.regex.Pattern.compile(".*-indexer\\d{13,17}-.*");
+
+        try {
+            RestClient client = getOrCreateLowLevelClient();
+
+            // _cat/indices with creation_date, expand_wildcards=all to include closed indices
+            Request catRequest = new Request("GET",
+                    "/_cat/indices/*-indexer*?h=index,creation.date.string,creation.date&format=json&expand_wildcards=all");
+            Response catResponse = client.performRequest(catRequest);
+            String body = EntityUtils.toString(catResponse.getEntity());
+            JsonNode indices = objectMapper.readTree(body);
+
+            if (!indices.isArray() || indices.isEmpty()) {
+                log.info("No test indices found matching '*-indexer*'");
+                return 0;
+            }
+
+            long now = System.currentTimeMillis();
+            int deleted = 0;
+            int total = 0;
+
+            for (JsonNode entry : indices) {
+                String indexName = entry.path("index").asText("");
+                if (!testIndexPattern.matcher(indexName).matches()) {
+                    continue;
+                }
+                total++;
+
+                long creationDate = entry.path("creation.date").asLong(0);
+                if (creationDate <= 0) {
+                    continue;
+                }
+
+                long ageMs = now - creationDate;
+                if (ageMs > maxAgeMs) {
+                    log.info(String.format("Deleting stale test index: %s (age: %ds)",
+                            indexName, ageMs / 1000));
+                    try {
+                        deleteIndex(indexName);
+                        deleted++;
+                    } catch (Exception e) {
+                        log.warning("Failed to delete stale index " + indexName + ": " + e.getMessage());
+                    }
+                }
+            }
+
+            log.info(String.format("Stale index cleanup: deleted %d of %d test indices (threshold: %ds)",
+                    deleted, total, maxAgeMs / 1000));
+            return deleted;
+
+        } catch (Exception e) {
+            log.warning("Stale test index cleanup failed (non-fatal): " + e.getMessage());
+            return 0;
+        }
+    }
+
     public long fetchRecords(String index) throws IOException {
         try {
             ElasticsearchClient client = this.getOrCreateClient(username, password, host);

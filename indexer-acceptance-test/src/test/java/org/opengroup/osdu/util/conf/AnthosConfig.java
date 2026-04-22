@@ -24,6 +24,11 @@ public class AnthosConfig {
     private static final String ENTITLEMENTS_DOMAIN_VARIABLE = "ENTITLEMENTS_DOMAIN";
 
     public static void updateEntitlementsDomainVariable() {
+        // Only override ENTITLEMENTS_DOMAIN if it is not already set via env var or system property
+        String existingDomain = System.getProperty(ENTITLEMENTS_DOMAIN_VARIABLE, System.getenv(ENTITLEMENTS_DOMAIN_VARIABLE));
+        if (existingDomain != null && !existingDomain.isEmpty()) {
+            return;
+        }
         String groupId = Optional.ofNullable(System.getProperty(GROUP_ID_VARIABLE, System.getenv(GROUP_ID_VARIABLE)))
                 .orElse("group");
         System.setProperty(ENTITLEMENTS_DOMAIN_VARIABLE, groupId);

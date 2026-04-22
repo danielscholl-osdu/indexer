@@ -16,10 +16,8 @@
 
 package org.opengroup.osdu.util;
 
-import com.sun.jersey.api.client.ClientResponse;
 import lombok.extern.java.Log;
 
-import javax.ws.rs.HttpMethod;
 import java.util.Map;
 
 import static org.opengroup.osdu.util.Config.getIndexerBaseURL;
@@ -38,7 +36,7 @@ public class IndexerClientUtil {
     public void deleteIndex(String kind) {
         String url = getIndexerBaseURL() + "index?kind=" + kind;
         log.info("URL: " + url);
-        ClientResponse response = httpClient.send(HttpMethod.DELETE, url, "", headers, httpClient.getAccessToken());
+        HttpResponse response = httpClient.send("DELETE", url, "", headers, httpClient.getAccessToken());
         log.info(response.toString());
     }  
 }

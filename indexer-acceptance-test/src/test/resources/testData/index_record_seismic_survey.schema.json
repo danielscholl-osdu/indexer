@@ -2,7 +2,7 @@
     "schemaInfo": {
         "schemaIdentity": {
             "authority": "tenant1",
-            "source": "indexer",
+            "source": "indexer<timestamp>",
             "entityType": "decimation-Integration",
             "schemaVersionMajor": "1",
             "schemaVersionMinor": "0",

@@ -60,7 +60,11 @@ public class SchemaServiceRecordSteps extends RecordSteps {
 
         super.getInputIndexMap().put(testIndex.getKind(), testIndex);
 
-        deleteIndex(testIndex.getKind());
+        // Delete the index via the indexer service to ensure a clean baseline.
+        // For timestamped kinds this is a no-op (the index doesn't exist yet),
+        // but for static/well-known kinds (e.g., IndexPropertyPathConfiguration)
+        // it clears stale data from previous scenarios.
+        this.indexerClientUtil.deleteIndex(testIndex.getKind());
     }
 
     private void updateSchema(Setup input) {
@@ -83,10 +87,6 @@ public class SchemaServiceRecordSteps extends RecordSteps {
         // Update the schema file reference and force schema update
         testIndex.setSchemaFile(input.getSchemaFile());
         testIndex.updateSchema();
-    }
-
-    private void deleteIndex(String kind) {
-        this.indexerClientUtil.deleteIndex(kind);
     }
 
     @Override

@@ -16,7 +16,7 @@
 
 package org.opengroup.osdu.common;
 
-import cucumber.api.DataTable;
+import io.cucumber.datatable.DataTable;
 import org.opengroup.osdu.models.Setup;
 import org.opengroup.osdu.models.schema.PersistentSchemaTestIndex;
 import org.opengroup.osdu.util.ElasticUtils;
@@ -63,7 +63,7 @@ public class SchemaServiceRecordSteps extends RecordSteps {
 
     @Override
     protected String generateRecordId(Map<String, Object> testRecord) {
-        return generateActualIdWithoutTs(testRecord.get("id").toString(), testRecord.get("kind").toString());
+        return generateActualId(testRecord.get("id").toString(), getTimeStamp(), testRecord.get("kind").toString());
     }
 
     @Override
