@@ -2,7 +2,7 @@
     "schemaInfo": {
         "schemaIdentity": {
             "authority": "tenant1",
-            "source": "wks",
+            "source": "wks<timestamp>",
             "entityType": "ArraysOfObjectsTestCollection",
             "schemaVersionMajor": 4,
             "schemaVersionMinor": 0,

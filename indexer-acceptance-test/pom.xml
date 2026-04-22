@@ -19,7 +19,9 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cucumber.version>1.2.5</cucumber.version>
+        <cucumber.version>7.20.1</cucumber.version>
+        <junit-platform.version>1.11.3</junit-platform.version>
+        <junit-jupiter.version>5.11.3</junit-jupiter.version>
         <argLine>
             --add-opens java.base/java.lang=ALL-UNNAMED
             --add-opens=java.base/java.util=ALL-UNNAMED
@@ -63,18 +65,23 @@
 
         <!-- region Cucumber -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit-jupiter.version}</version>
         </dependency>
         <dependency>
-            <groupId>info.cukes</groupId>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <version>${junit-platform.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
             <version>${cucumber.version}</version>
         </dependency>
         <dependency>
-            <groupId>info.cukes</groupId>
-            <artifactId>cucumber-junit</artifactId>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit-platform-engine</artifactId>
             <version>${cucumber.version}</version>
         </dependency>
         <!-- endregion -->
@@ -121,30 +128,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.jaxrs</groupId>
-            <artifactId>jackson-jaxrs-json-provider</artifactId>
-            <version>2.9.9</version>
-        </dependency>
-        <!-- endregion -->
-
-        <!--region Logging-->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-to-slf4j</artifactId>
-            <version>2.11.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
-            <version>1.8.0-beta4</version>
-        </dependency>
-        <!-- endregion -->
-        <!-- region Jackson -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
@@ -153,6 +136,7 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
         <!-- endregion -->
+
 
         <dependency>
             <groupId>com.google.api-client</groupId>
@@ -166,15 +150,78 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-client</artifactId>
-            <version>1.19.4</version>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.4</version>
         </dependency>
         <dependency>
             <groupId>io.qameta.allure</groupId>
-            <artifactId>allure-cucumber-jvm</artifactId>
+            <artifactId>allure-cucumber7-jvm</artifactId>
             <version>2.20.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.cucumber</groupId>
+                    <artifactId>gherkin</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.cucumber</groupId>
+                    <artifactId>messages</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.cucumber</groupId>
+                    <artifactId>cucumber-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.cucumber</groupId>
+                    <artifactId>cucumber-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <!-- Exclude augmented tests by default; they require index-augmenter-enabled feature flag.
+                         To include: mvn verify -DincludeAugmentedTests=true -->
+                    <excludes>
+                        <exclude>${augmentedTestExclude}</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <!-- Default profile: exclude augmented tests -->
+            <id>exclude-augmented</id>
+            <activation>
+                <property>
+                    <name>!includeAugmentedTests</name>
+                </property>
+            </activation>
+            <properties>
+                <augmentedTestExclude>**/RunIndexerAugmentedTest.java</augmentedTestExclude>
+            </properties>
+        </profile>
+        <profile>
+            <!-- Opt-in profile: include augmented tests -->
+            <id>include-augmented</id>
+            <activation>
+                <property>
+                    <name>includeAugmentedTests</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <augmentedTestExclude>none</augmentedTestExclude>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

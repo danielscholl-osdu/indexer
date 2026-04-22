@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
@@ -74,6 +75,9 @@ public class RecordSteps extends TestsBase {
     private ObjectMapper mapper = new ObjectMapper();
     private boolean shutDownHookAdded = false;
 
+    private static final AtomicBoolean staleIndicesCleaned = new AtomicBoolean(false);
+    private static final long DEFAULT_STALE_INDEX_MAX_AGE_MS = TimeUnit.HOURS.toMillis(2);
+
     // Append random number to timestamp to ensure uniqueness when tests run in parallel
     private String timeStamp = System.currentTimeMillis() + String.valueOf(new java.util.Random().nextInt(10000));
     private List<Map<String, Object>> records;
@@ -90,6 +94,19 @@ public class RecordSteps extends TestsBase {
 
     public RecordSteps(HTTPClient httpClient, ElasticUtils elasticUtils) {
         super(httpClient, elasticUtils);
+    }
+
+    /**
+     * One-time cleanup of stale test indices from previous failed runs.
+     * Uses AtomicBoolean to ensure it runs exactly once per JVM, even under
+     * parallel scenario execution. The age threshold is configurable via the
+     * system property {@code STALE_INDEX_MAX_AGE_MS} (defaults to 2 hours).
+     */
+    private void cleanupStaleTestIndicesOnce() {
+        if (staleIndicesCleaned.compareAndSet(false, true)) {
+            long maxAgeMs = Long.getLong("STALE_INDEX_MAX_AGE_MS", DEFAULT_STALE_INDEX_MAX_AGE_MS);
+            elasticUtils.deleteStaleTestIndices(maxAgeMs);
+        }
     }
 
     /******************One time cleanup for whole feature**************/
@@ -114,6 +131,7 @@ public class RecordSteps extends TestsBase {
     }
 
     public void the_schema_is_created_with_the_following_kind(DataTable dataTable) {
+        cleanupStaleTestIndicesOnce();
 
         List<Setup> inputList = dataTable.asList(Setup.class);
         for (Setup input : inputList) {

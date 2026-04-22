@@ -17,12 +17,12 @@
 
 package org.opengroup.osdu.step_definitions.record;
 
-import cucumber.api.DataTable;
-import cucumber.api.Scenario;
-import cucumber.api.java.Before;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.Scenario;
+import io.cucumber.java.Before;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.common.SchemaServiceRecordSteps;
 import org.opengroup.osdu.util.AnthosHTTPClient;
@@ -78,9 +78,13 @@ public class Steps extends SchemaServiceRecordSteps {
         super.i_should_not_get_any_documents_for_the_index_in_the_Elastic_Search(index);
     }
 
-    @Then("^I should get the elastic \"(.*?)\" for the \"([^\"]*)\" and \"([^\"]*)\" in the Elastic Search$")
+    @Then("^I should get the elastic (.*) for the \"([^\"]*)\" and \"([^\"]*)\" in the Elastic Search$")
     public void i_should_get_the_elastic_for_the_tenant_testindex_timestamp_well_in_the_Elastic_Search(String expectedMapping, String kind, String index)
         throws Throwable {
+        // Strip surrounding quotes if present (feature file may or may not quote the mapping JSON)
+        if (expectedMapping.startsWith("\"") && expectedMapping.endsWith("\"")) {
+            expectedMapping = expectedMapping.substring(1, expectedMapping.length() - 1);
+        }
         super.i_should_get_the_elastic_for_the_tenant_testindex_timestamp_well_in_the_Elastic_Search(expectedMapping, kind, index);
     }
 
@@ -114,7 +118,7 @@ public class Steps extends SchemaServiceRecordSteps {
     public void i_should_get_the_documents_for_the_in_the_Elastic_Search_by_geoQuery(
         int expectedCount, String index, Double topLatitude, Double topLongitude, Double bottomLatitude, Double bottomLongitude, String field)
         throws Throwable {
-        String actualName = generateActualName(index, null);
+        String actualName = generateActualName(index, getTimeStamp());
         super.i_should_get_the_documents_for_the_in_the_Elastic_Search_by_geoQuery(expectedCount, actualName, topLatitude, topLongitude, bottomLatitude,
             bottomLongitude, field);
     }
@@ -123,7 +127,7 @@ public class Steps extends SchemaServiceRecordSteps {
     public void i_should_get_the_documents_for_the_in_the_Elastic_Search_by_nestedQuery(
         int expectedCount, String index, String path, String firstNestedProperty, String firstNestedValue, String secondNestedProperty,
         String secondNestedValue) throws Throwable {
-        String actualName = generateActualName(index, null);
+        String actualName = generateActualName(index, getTimeStamp());
         super.i_should_get_the_documents_for_the_in_the_Elastic_Search_by_nestedQuery(expectedCount, actualName, path, firstNestedProperty, firstNestedValue,
             secondNestedProperty, secondNestedValue);
     }
@@ -131,7 +135,7 @@ public class Steps extends SchemaServiceRecordSteps {
     @Then("^I should be able search (\\d+) documents for the \"([^\"]*)\" by flattened inner properties \\(\"([^\"]*)\", \"([^\"]*)\"\\)$")
     public void i_should_be_able_search_documents_for_the_by_flattened_inner_properties(int expectedCount, String index, String flattenedField,
         String flattenedFieldValue) throws Throwable {
-        String actualName = generateActualName(index, null);
+        String actualName = generateActualName(index, getTimeStamp());
         super.i_should_be_able_search_documents_for_the_by_flattened_inner_properties(expectedCount, actualName, flattenedField, flattenedFieldValue);
 
     }
@@ -140,7 +144,7 @@ public class Steps extends SchemaServiceRecordSteps {
     public void i_should_get_object_in_search_response_without_hints_in_schema(String objectInnerField, String index, String recordFile, String acl,
         String kind)
         throws Throwable {
-        String actualName = generateActualName(index, null);
+        String actualName = generateActualName(index, getTimeStamp());
         super.i_should_get_object_in_search_response_without_hints_in_schema(objectInnerField, actualName, recordFile, acl, kind);
     }
 
@@ -160,5 +164,15 @@ public class Steps extends SchemaServiceRecordSteps {
     public void i_should_get_the_documents_for_the_in_the_Elastic_Search_by_AsIngestedCoordinates (
             int expectedCount, String index, Double topPointX, Double bottomPointX, String pointX, Double topPointY, Double bottomPointY, String pointY) throws Throwable {
         super.i_should_get_the_documents_for_the_in_the_Elastic_Search_by_AsIngestedCoordinates(expectedCount, index, topPointX, bottomPointX, pointX, topPointY, bottomPointY, pointY);
+    }
+
+    @When("^I ingest records with xcollab value \"([^\"]*)\" included with the \"([^\"]*)\" with \"([^\"]*)\" for a given \"([^\"]*)\"$")
+    public void i_ingest_records_with_xcollab_value_included(String xcollab, String recordFile, String acl, String kind) {
+        super.i_ingest_records_with_xcollab_value_included_with_the_with_for_a_given(xcollab, recordFile, acl, kind);
+    }
+
+    @Then("^I should get the (\\d+) documents with xcollab value \"([^\"]*)\" included for the \"([^\"]*)\" in the Elastic Search$")
+    public void i_should_get_documents_with_xcollab_value(int expectedNumber, String xcollab, String index) throws Exception {
+        super.i_should_get_the_documents_with_xcollab_value_included_for_the_in_the_Elastic_Search(expectedNumber, xcollab, index);
     }
 }

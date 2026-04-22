@@ -2,7 +2,7 @@
   "schemaInfo": {
     "schemaIdentity": {
       "authority": "tenant1",
-      "source": "wks",
+      "source": "wks<timestamp>",
       "entityType": "master-data--Wellbore",
       "schemaVersionMajor": "2",
       "schemaVersionMinor": "0",
