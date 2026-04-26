@@ -29,8 +29,7 @@
 
   <properties>
     <!-- Core Dependencies -->
-    <core-lib-azure.version>2.0.8</core-lib-azure.version>
-    <azure-core.version>1.46.0</azure-core.version>
+    <core-lib-azure.version>2.5.9</core-lib-azure.version>
 
     <!-- Plugin Versions -->
     <jacoco-plugin.version>0.8.12</jacoco-plugin.version>

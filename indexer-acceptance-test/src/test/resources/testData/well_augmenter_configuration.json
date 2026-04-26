@@ -1,5 +1,5 @@
 [{
-    "id": "tenant1:reference-data--IndexPropertyPathConfiguration:index-property--Well:1",
+    "id": "tenant1:reference-data--IndexPropertyPathConfiguration:index-property--Well<timestamp>:1",
     "data": {
         "Name": "Well-IndexPropertyPathConfiguration",
         "Description": "The index property list for master-data--Well:1., valid for all master-data--Well kinds for major version 1.",

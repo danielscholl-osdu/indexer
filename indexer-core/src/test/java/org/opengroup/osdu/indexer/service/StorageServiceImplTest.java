@@ -89,6 +89,12 @@ public class StorageServiceImplTest {
     @Before
     public void setup() {
 
+        // Initialize retry configuration defaults (not injected by @InjectMocks)
+        sut.maxRetryAttempts = 5;
+        sut.baseDelayMs = 1000;
+        sut.maxDelayMs = 60000;
+        sut.jitterFactor = 0.5;
+
         String recordChangedMessages = "[{\"id\":\"tenant1:doc:1dbf528e0e0549cab7a08f29fbfc8465\",\"kind\":\"tenant1:testindexer1528919679710:well:1.0.0\",\"op\":\"purge\"}," +
                 "{\"id\":\"tenant1:doc:15e790a69beb4d789b1f979e2af2e813\",\"kind\":\"tenant1:testindexer1528919679710:well:1.0.0\",\"op\":\"create\"}]";
 
@@ -289,6 +295,7 @@ public class StorageServiceImplTest {
         RecordReindexRequest recordReindexRequest = RecordReindexRequest.builder().kind("tenant:test:test:1.0.0").cursor("100").build();
 
         HttpResponse httpResponse = new HttpResponse();
+        httpResponse.setResponseCode(200);
         httpResponse.setBody(new Gson().toJson(recordReindexRequest, RecordReindexRequest.class));
 
         when(this.urlFetchService.sendRequest(ArgumentMatchers.any())).thenReturn(httpResponse);

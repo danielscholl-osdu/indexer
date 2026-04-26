@@ -42,7 +42,7 @@ aws-test-java:
         kill $pid
         rm $KUBECONFIG
       }' EXIT
-    - $MAVEN_BUILD $INTEGRATION_TEST_DIR maven-aws-integration-test-output.txt ${AWS_MAVEN_TEST_COMMAND_OVERRIDE:-test} --update-snapshots -DdisableXmlReport=true
+    - cd $INTEGRATION_TEST_DIR && $MAVEN ${AWS_MAVEN_TEST_COMMAND_OVERRIDE:-test} --update-snapshots -DdisableXmlReport=true
   only:
     variables:
       #Default if not defined

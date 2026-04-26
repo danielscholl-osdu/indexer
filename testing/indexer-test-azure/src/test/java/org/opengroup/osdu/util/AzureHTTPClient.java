@@ -14,27 +14,28 @@
 
 package org.opengroup.osdu.util;
 
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.ws.rs.core.Response;
 import java.util.Map;
 import java.util.UUID;
+
 import static org.opengroup.osdu.util.HTTPClient.indentatedResponseBody;
 
+/**
+ * Azure-specific HTTP client with retry logic for server errors.
+ */
 @Slf4j
 @ToString
 public class AzureHTTPClient extends HTTPClient {
 
     private static String token = null;
+    private static final int MAX_RETRY = 3;
+    private static final int RETRY_DELAY_MS = 5000;
 
     @Override
     public synchronized String getAccessToken() {
-        if(token == null) {
+        if (token == null) {
             try {
                 token = "Bearer " + JwtTokenUtil.getAccessToken();
             } catch (Exception e) {
@@ -43,40 +44,70 @@ public class AzureHTTPClient extends HTTPClient {
         }
         return token;
     }
-    public ClientResponse send(String httpMethod, String url, String payLoad, Map<String, String> headers, String token) {
-        ClientResponse response = null;
+
+    /**
+     * Sends an HTTP request with retry logic for server errors.
+     * Retries up to MAX_RETRY times if a 5xx response is received.
+     */
+    @Override
+    public HttpResponse send(String httpMethod, String url, String payLoad, Map<String, String> headers, String token) {
         System.out.println("in Azure send method");
-        Client client = getClient();
-        client.setReadTimeout(300000);
-        client.setConnectTimeout(300000);
-        WebResource webResource = client.resource(url);
         log.info("waiting on response in azure send");
+
+        HttpResponse response = null;
         int count = 1;
-        int MaxRetry = 3;
-        while (count < MaxRetry) {
+
+        while (count <= MAX_RETRY) {
             try {
-                headers.put("correlation-id", headers.getOrDefault("correlation-id", UUID.randomUUID().toString()));
-                //removing Auth header before logging
-                headers.remove("Authorization");
-                log.info(String.format("Request method: %s\nHeaders: %s\nRequest Body: %s", httpMethod, headers, indentatedResponseBody(payLoad)));
-                log.info(String.format("Attempt: #%s/%s, CorrelationId: %s", count, MaxRetry, headers.get("correlation-id")));
-                response = this.getClientResponse(httpMethod, payLoad, webResource, headers, token);
-                if (response.getStatusInfo().getFamily().equals(Response.Status.Family.valueOf("SERVER_ERROR"))) {
+                // Ensure correlation-id is set
+                if (headers != null) {
+                    headers.put("correlation-id", headers.getOrDefault("correlation-id", UUID.randomUUID().toString()));
+                }
+
+                log.info(String.format("Request method: %s\nHeaders: %s\nRequest Body: %s",
+                        httpMethod, headers, indentatedResponseBody(payLoad)));
+                log.info(String.format("Attempt: #%s/%s, CorrelationId: %s",
+                        count, MAX_RETRY, headers != null ? headers.get("correlation-id") : "N/A"));
+
+                // Use parent class to make the actual request
+                response = super.send(httpMethod, url, payLoad, headers, token);
+
+                // Check for server errors and retry
+                if (response.getStatusInfo().getFamily() == HttpResponse.StatusFamily.SERVER_ERROR) {
+                    log.warn(String.format("Server error (status %d), retrying...", response.getStatus()));
                     count++;
-                    Thread.sleep(5000);
+                    Thread.sleep(RETRY_DELAY_MS);
                     continue;
                 } else {
                     break;
                 }
+            } catch (AssertionError ae) {
+                // Re-throw assertion errors from parent
+                log.error("Exception While Making Request: ", ae);
+                count++;
+                if (count > MAX_RETRY) {
+                    throw ae;
+                }
+                try {
+                    Thread.sleep(RETRY_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
             } catch (Exception ex) {
                 log.error("Exception While Making Request: ", ex);
                 count++;
-                if (count == MaxRetry) {
+                if (count > MAX_RETRY) {
                     throw new AssertionError("Error: Send request error", ex);
+                }
+                try {
+                    Thread.sleep(RETRY_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
                 }
             } finally {
                 if (response != null) {
-                    log.info(String.format("This is the response received : %s\nHeaders: %s\nStatus code: %s", response, response.getHeaders(), response.getStatus()));
+                    log.info(String.format("This is the response received: %s\nHeaders: %s\nStatus code: %s",
+                            response, response.getHeaders(), response.getStatus()));
                 }
             }
         }
