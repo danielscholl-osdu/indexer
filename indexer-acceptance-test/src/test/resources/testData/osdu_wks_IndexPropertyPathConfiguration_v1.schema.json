@@ -2,7 +2,7 @@
     "schemaInfo": {
         "schemaIdentity": {
             "authority": "osdu",
-            "source": "wks",
+            "source": "wks<timestamp>",
             "entityType": "reference-data--IndexPropertyPathConfiguration",
             "schemaVersionMajor": 1,
             "schemaVersionMinor": 0,

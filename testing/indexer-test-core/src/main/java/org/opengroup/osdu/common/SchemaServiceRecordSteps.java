@@ -1,11 +1,27 @@
+/*
+ * Copyright 2017-2025, The Open Group
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.opengroup.osdu.common;
 
-import cucumber.api.DataTable;
-import cucumber.api.java.en.Then;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.en.Then;
 import org.opengroup.osdu.models.Setup;
 import org.opengroup.osdu.models.schema.PersistentSchemaTestIndex;
 import org.opengroup.osdu.util.ElasticUtils;
 import org.opengroup.osdu.util.HTTPClient;
+import org.opengroup.osdu.models.TestIndex;
 
 import java.util.List;
 import java.util.Map;
@@ -25,6 +41,11 @@ public class SchemaServiceRecordSteps extends RecordSteps {
         }
     }
 
+    public void the_schema_is_updated_with_the_following_kind(DataTable dataTable) {
+        List<Setup> inputList = dataTable.asList(Setup.class);
+        inputList.forEach(this::updateSchema);
+    }
+
     public void i_set_scenarios_as_stateful(boolean stateful) throws Throwable {
         SchemaServiceRecordSteps.runStatefulScenario = stateful;
     }
@@ -39,16 +60,33 @@ public class SchemaServiceRecordSteps extends RecordSteps {
 
         super.getInputIndexMap().put(testIndex.getKind(), testIndex);
 
-        deleteIndex(testIndex.getKind());
+        // Delete the index via the indexer service to ensure a clean baseline.
+        // For timestamped kinds this is a no-op (the index doesn't exist yet),
+        // but for static/well-known kinds (e.g., IndexPropertyPathConfiguration)
+        // it clears stale data from previous scenarios.
+        this.indexerClientUtil.deleteIndex(testIndex.getKind());
     }
 
-    private void deleteIndex(String kind) {
-        this.indexerClientUtil.deleteIndex(kind);
-    }
+    private void updateSchema(Setup input) {
+        String actualKind = generateActualName(input.getKind(), super.getTimeStamp());
 
-    @Override
-    protected String generateRecordId(Map<String, Object> testRecord) {
-        return generateActualIdWithoutTs(testRecord.get("id").toString(), testRecord.get("kind").toString());
+        // Retrieve the existing TestIndex from the map
+        Map<String, TestIndex> indexMap = super.getInputIndexMap();
+        TestIndex existingTestIndex = indexMap.get(actualKind);
+
+        if (existingTestIndex == null) {
+            throw new AssertionError("Cannot update schema - TestIndex not found for kind: " + actualKind);
+        }
+
+        if (!(existingTestIndex instanceof PersistentSchemaTestIndex)) {
+            throw new AssertionError("Cannot update schema - TestIndex is not a PersistentSchemaTestIndex");
+        }
+
+        PersistentSchemaTestIndex testIndex = (PersistentSchemaTestIndex) existingTestIndex;
+
+        // Update the schema file reference and force schema update
+        testIndex.setSchemaFile(input.getSchemaFile());
+        testIndex.updateSchema();
     }
 
     @Override

@@ -16,15 +16,43 @@
 
 package org.opengroup.osdu.util;
 
-import org.opengroup.osdu.core.aws.v2.cognito.AWSCognitoClient;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClientBuilder;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
 
+import java.util.Map;
+
+/**
+ * Obtains JWT access tokens from AWS Cognito using the AWS SDK v2 directly.
+ * Replaces the previous dependency on os-core-lib-aws's AWSCognitoClient to
+ * avoid pulling in Spring Boot 3 / Spring 6 transitive dependencies.
+ */
 class JwtTokenUtil {
     static String getAccessToken() {
         String clientId = Config.getAWSCognitoClientId();
         String authFlow = Config.getAWSCognitoAuthFlow();
         String user = Config.getAWSCognitoUser();
         String password = Config.getAWSCognitoPassword();
-        AWSCognitoClient client = new AWSCognitoClient(clientId, authFlow, user, password);
-        return client.getTokenForUserWithAccess();
+
+        CognitoIdentityProviderClientBuilder builder = CognitoIdentityProviderClient.builder()
+                .credentialsProvider(DefaultCredentialsProvider.create());
+
+        String regionStr = System.getenv("AWS_COGNITO_REGION");
+        if (regionStr != null) {
+            builder.region(Region.of(regionStr));
+        }
+
+        try (CognitoIdentityProviderClient provider = builder.build()) {
+            InitiateAuthResponse response = provider.initiateAuth(InitiateAuthRequest.builder()
+                    .clientId(clientId)
+                    .authFlow(AuthFlowType.fromValue(authFlow))
+                    .authParameters(Map.of("USERNAME", user, "PASSWORD", password))
+                    .build());
+            return response.authenticationResult().accessToken();
+        }
     }
 }

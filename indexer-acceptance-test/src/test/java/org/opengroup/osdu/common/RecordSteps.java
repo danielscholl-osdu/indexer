@@ -1,9 +1,25 @@
+/*
+ * Copyright 2017-2025, The Open Group
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opengroup.osdu.common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.opengroup.osdu.util.Config.getEntitlementsDomain;
 import static org.opengroup.osdu.util.Config.getStorageBaseURL;
 import static org.opengroup.osdu.util.HTTPClient.indentatedResponseBody;
@@ -21,8 +37,7 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.sun.jersey.api.client.ClientResponse;
-import cucumber.api.DataTable;
+import io.cucumber.datatable.DataTable;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -31,9 +46,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import javax.ws.rs.HttpMethod;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -46,6 +61,10 @@ import org.opengroup.osdu.models.record.RecordData;
 import org.opengroup.osdu.util.ElasticUtils;
 import org.opengroup.osdu.util.FileHandler;
 import org.opengroup.osdu.util.HTTPClient;
+import org.opengroup.osdu.util.HttpResponse;
+import org.opengroup.osdu.util.PollingConfig;
+import org.opengroup.osdu.util.PollingResult;
+import org.opengroup.osdu.util.PollingUtils;
 import org.springframework.util.CollectionUtils;
 
 @Log
@@ -54,7 +73,7 @@ public class RecordSteps extends TestsBase {
     private ObjectMapper mapper = new ObjectMapper();
     private boolean shutDownHookAdded = false;
 
-    private String timeStamp = String.valueOf(System.currentTimeMillis());
+    private String timeStamp = String.valueOf(System.currentTimeMillis() + new Random().nextInt(10000));
     private List<Map<String, Object>> records;
     private Map<String, String> headers = httpClient.getCommonHeader();
 
@@ -86,7 +105,7 @@ public class RecordSteps extends TestsBase {
     protected void cleanupRecords() {
         for (Map<String, Object> testRecord : records) {
             String id = testRecord.get("id").toString();
-            httpClient.send(HttpMethod.DELETE, getStorageBaseURL() + "records/" + id, null, headers, httpClient.getAccessToken());
+            httpClient.send("DELETE", getStorageBaseURL() + "records/" + id, null, headers, httpClient.getAccessToken());
             log.info("Deleted the records");
         }
     }
@@ -146,9 +165,9 @@ public class RecordSteps extends TestsBase {
             }
             String payLoad = new Gson().toJson(records);
             log.log(Level.INFO, "Start ingesting records={0}", payLoad);
-            ClientResponse clientResponse = httpClient.send(HttpMethod.PUT, getStorageBaseURL() + "records", payLoad, headers, httpClient.getAccessToken());
-            log.info(String.format("Response body: %s\n Correlation id: %s\nResponse Status code: %s", indentatedResponseBody(clientResponse.getEntity(String.class)), clientResponse.getHeaders().get("correlation-id"), clientResponse.getStatus()));
-            assertEquals(201, clientResponse.getStatus());
+            HttpResponse httpResponse = httpClient.send("PUT", getStorageBaseURL() + "records", payLoad, headers, httpClient.getAccessToken());
+            log.info(String.format("Response body: %s\n Correlation id: %s\nResponse Status code: %s", indentatedResponseBody(httpResponse.getEntity(String.class)), httpResponse.getHeaders().get("correlation-id"), httpResponse.getStatus()));
+            assertEquals(201, httpResponse.getStatus());
 
         } catch (Exception ex) {
             throw new AssertionError(ex.getMessage());
@@ -179,7 +198,13 @@ public class RecordSteps extends TestsBase {
         String authority = tenantMap.get(kindParts[0]);
         String source = kindParts[1];
         expectedMapping = expectedMapping.replaceAll("<authority-id>", authority).replaceAll("<source-id>", source);
+
+        // ES may return the mapping under a physical index name that differs from the alias
         IndexMappingRecord typeMapping = elasticMapping.get(index);
+        if (typeMapping == null && !elasticMapping.isEmpty()) {
+            typeMapping = elasticMapping.values().iterator().next();
+        }
+        assertNotNull(typeMapping, "No mapping found for index: " + index + " (keys: " + elasticMapping.keySet() + ")");
 
         StringBuilder collector = new StringBuilder();
         TypeMapping mappings = typeMapping.mappings();
@@ -215,10 +240,19 @@ public class RecordSteps extends TestsBase {
     }
 
     public void iShouldBeAbleToSearchRecordByTagKeyAndTagValue(String index, String tagKey, String tagValue, int expectedNumber) throws Throwable {
-        TimeUnit.SECONDS.sleep(40);
         index = generateActualName(index, timeStamp);
-        long actualNumberOfRecords = elasticUtils.fetchRecordsByTags(index, tagKey, tagValue);
-        assertEquals(expectedNumber, actualNumberOfRecords);
+        final String idx = index;
+        PollingResult<Long> result = PollingUtils.pollWithRetry(
+            PollingConfig.documentPolling(),
+            () -> { try { return elasticUtils.fetchRecordsByTags(idx, tagKey, tagValue); } catch (IOException e) { return -1L; } },
+            count -> count == expectedNumber,
+            context -> {
+                if (context.getAttempt() > 0 && context.getAttempt() % 3 == 0) {
+                    try { elasticUtils.refreshIndex(idx); } catch (IOException e) { /* ignore */ }
+                }
+            }
+        );
+        assertEquals(expectedNumber, result.getValueOrThrow().longValue());
     }
 
     public void iShouldCleanupIndicesOfExtendedKinds(String extendedKinds) throws Throwable {
@@ -231,8 +265,8 @@ public class RecordSteps extends TestsBase {
     }
 
     public void iShouldBeAbleToSearchRecordByFieldAndFieldValue(String index, String fieldKey, String fieldValue, int expectedNumber) throws Throwable {
-        TimeUnit.SECONDS.sleep(60);
         index = generateActualName(index, timeStamp);
+        long numOfIndexedDocuments = createIndex(index);
         long actualNumberOfRecords = elasticUtils.fetchRecordsByFieldAndFieldValue(index, fieldKey, fieldValue);
         assertEquals(expectedNumber, actualNumberOfRecords);
     }
@@ -299,8 +333,11 @@ public class RecordSteps extends TestsBase {
 
     public void i_should_get_string_array_in_search_response(String index, String field, String fieldValue, String arrayField, String desiredArrayValue)
             throws Throwable {
-        TimeUnit.SECONDS.sleep(40);
-        final List<Map<String, Object>> elasticRecordData =  elasticUtils.fetchRecordsByAttribute(index, field, fieldValue);
+        // Wait for index to be populated before searching by attribute
+        index = generateActualName(index, timeStamp);
+        createIndex(index);
+
+        final List<Map<String, Object>> elasticRecordData = elasticUtils.fetchRecordsByAttribute(index, field, fieldValue);
         assertEquals(1, elasticRecordData.size());
         final List<String> stringList = Arrays.asList(arrayField.split("\\."));
         final Map<String, Object> jsonRecord = elasticRecordData.get(0);
@@ -356,18 +393,18 @@ public class RecordSteps extends TestsBase {
 
             String payLoad = new Gson().toJson(records);
             log.log(Level.INFO, "Start ingesting records={0}", payLoad);
-            ClientResponse clientResponse = httpClient.send(HttpMethod.PUT,
+            HttpResponse httpResponse = httpClient.send("PUT",
                     getStorageBaseURL() + "records",
                     payLoad,
                     headerXcollab,
                     httpClient.getAccessToken());
 
-            String responseEntity = clientResponse.getEntity(String.class);
+            String responseEntity = httpResponse.getEntity(String.class);
             log.info(String.format("Response body with xcollab: %s\n Correlation id: %s\nResponse Status code: %s",
                     indentatedResponseBody(responseEntity),
-                    clientResponse.getHeaders().get("correlation-id"),
-                    clientResponse.getStatus()));
-            assertEquals(201, clientResponse.getStatus());
+                    httpResponse.getHeaders().get("correlation-id"),
+                    httpResponse.getStatus()));
+            assertEquals(201, httpResponse.getStatus());
 
             // remember record id for future tests
             upsertedRecordsWithXcollab = mapper.readValue(responseEntity, UpsertRecords.class);
@@ -398,16 +435,25 @@ public class RecordSteps extends TestsBase {
         Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(xcollab);
         String collaborationId = collaborationContext.orElseThrow().getId();
 
-        for (int i = 0; i < 20; i++) {
-            searchResponse = elasticUtils.fetchRecordsByIdAndMustHaveXcollab(index, id, collaborationId);
-            if (searchResponse.hits().total().value() == 0) {
-                log.log(Level.INFO, String.format("No records found with in index: %s, id: %s, collaborationId: %s,"
-                        + " will try to wait up to 3 seconds.", index, id, collaborationId));
-                TimeUnit.SECONDS.sleep(3);
-            } else {
-                break;
+        final String idx = index;
+        PollingResult<SearchResponse<Record>> pollingResult = PollingUtils.pollWithRetry(
+            PollingConfig.documentPolling(),
+            () -> {
+                try {
+                    return elasticUtils.fetchRecordsByIdAndMustHaveXcollab(idx, id, collaborationId);
+                } catch (Exception e) {
+                    return null;
+                }
+            },
+            resp -> resp != null && resp.hits().total().value() > 0,
+            context -> {
+                if (context.getAttempt() > 0 && context.getAttempt() % 3 == 0) {
+                    try { elasticUtils.refreshIndex(idx); } catch (IOException e) { /* ignore */ }
+                }
             }
-        }
+        );
+        searchResponse = pollingResult.isSuccess() ? pollingResult.getValue() : 
+            elasticUtils.fetchRecordsByIdAndMustHaveXcollab(index, id, collaborationId);
 
         log.log(Level.INFO,
                 String.format("xcollab feature: print searchResponse while being get a record by id and x-collab : %s",
@@ -464,55 +510,19 @@ public class RecordSteps extends TestsBase {
 
 
     private long createIndex(String index) throws InterruptedException, IOException {
-        long numOfIndexedDocuments = 0;
-        int iterator;
-
-        // index.refresh_interval is set to default 30s, wait for 40s initially
-        Thread.sleep(40000);
-
-        for (iterator = 0; iterator < 20; iterator++) {
-
-            numOfIndexedDocuments = elasticUtils.fetchRecords(index);
-            if (numOfIndexedDocuments > 0) {
-                log.info(String.format("index: %s | attempts: %s | documents acknowledged by elastic: %s", index, iterator, numOfIndexedDocuments));
-                break;
-            } else {
-                log.info(String.format("index: %s | documents acknowledged by elastic: %s", index, numOfIndexedDocuments));
-                Thread.sleep(5000);
-            }
-
-            if ((iterator + 1) % 5 == 0) elasticUtils.refreshIndex(index);
+        PollingResult<Long> result = PollingUtils.pollForDocuments(index, PollingConfig.documentPolling(), elasticUtils);
+        if (!result.isSuccess()) {
+            fail(String.format("Index '%s' not created: %s", index, result.getFailureReason()));
         }
-        if (iterator >= 20) {
-            fail(String.format("index not created after waiting for %s seconds", ((40000 + iterator * 5000) / 1000)));
-        }
-        return numOfIndexedDocuments;
+        return result.getValue();
     }
 
     private long getRecordsInIndex(String index, int expectedCount) throws InterruptedException, IOException {
-        long numOfIndexedDocuments = 0;
-        int iterator;
-
-        // index.refresh_interval is set to default 30s, wait for 40s initially
-        Thread.sleep(40000);
-
-        for (iterator = 0; iterator < 20; iterator++) {
-
-            numOfIndexedDocuments = elasticUtils.fetchRecords(index);
-            if (expectedCount == numOfIndexedDocuments) {
-                log.info(String.format("index: %s | attempts: %s | documents acknowledged by elastic: %s", index, iterator, numOfIndexedDocuments));
-                break;
-            } else {
-                log.info(String.format("index: %s | documents acknowledged by elastic: %s", index, numOfIndexedDocuments));
-                Thread.sleep(5000);
-            }
-
-            if ((iterator + 1) % 5 == 0) elasticUtils.refreshIndex(index);
+        PollingResult<Long> result = PollingUtils.pollForExpectedCount(index, expectedCount, PollingConfig.documentPollingWithExpectedCount(), elasticUtils);
+        if (!result.isSuccess()) {
+            fail(String.format("Expected %d documents in index '%s', but polling failed: %s", expectedCount, index, result.getFailureReason()));
         }
-        if (iterator >= 20) {
-            fail(String.format("index not created after waiting for %s seconds", ((40000 + iterator * 5000) / 1000)));
-        }
-        return numOfIndexedDocuments;
+        return result.getValue();
     }
 
     private Boolean areJsonEqual(String firstJson, String secondJson) {
@@ -543,6 +553,13 @@ public class RecordSteps extends TestsBase {
 
     public String getTimeStamp() {
         return timeStamp;
+    }
+
+    public String generateActualName(String rawName) {
+        for (Map.Entry<String, String> tenant : tenantMap.entrySet()) {
+            rawName = rawName.replaceAll(tenant.getKey(), tenant.getValue());
+        }
+        return rawName.replaceAll("<timestamp>", timeStamp);
     }
 
     protected void addShutDownHook() {
