@@ -23,6 +23,11 @@
 	<properties>
 		<spring.version>5.3.30</spring.version>
 		<os-core-common.version>0.27.2</os-core-common.version>
+		<!-- Test framework versions -->
+		<cucumber.version>7.20.1</cucumber.version>
+		<junit.jupiter.version>5.11.3</junit.jupiter.version>
+		<junit.platform.version>1.11.3</junit.platform.version>
+		<maven.surefire.version>3.5.2</maven.surefire.version>
 	</properties>
 	<packaging>pom</packaging>
 
@@ -42,6 +47,16 @@
 		<module>indexer-test-ibm</module>
         <module>indexer-test-baremetal</module>
     </modules>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${maven.surefire.version}</version>
+			</plugin>
+		</plugins>
+	</build>
 
 	<repositories>
 		<repository>

@@ -68,10 +68,12 @@ public class ReindexServiceImpl implements ReindexService {
         DpsHeaders headers = this.requestInfo.getHeadersWithDwdAuthZ();
 
         if (forceClean) {
+            jaxRsDpsLog.info(String.format("Force clean enabled for kind : %s", recordReindexRequest.getKind()));
             this.indexSchemaService.syncIndexMappingWithStorageSchema(recordReindexRequest.getKind());
             initialDelayMillis = 30000l;
         }
         else if(updateSchemaMapping){
+            jaxRsDpsLog.info(String.format("Updating existing schema mapping for kind : %s .", recordReindexRequest.getKind()));
             this.indexSchemaService.processSchemaUpsert(recordReindexRequest.getKind());
             initialDelayMillis = 15000l;
         }
@@ -79,7 +81,7 @@ public class ReindexServiceImpl implements ReindexService {
         RecordQueryResponse recordQueryResponse = this.storageService.getRecordsByKind(recordReindexRequest);
 
         if (recordQueryResponse.getResults() != null && recordQueryResponse.getResults().size() != 0) {
-
+            jaxRsDpsLog.info(String.format("Fetched total %s records for kind: %s", recordQueryResponse.getResults().size(), recordReindexRequest.getKind()));
             List<RecordInfo> msgs = recordQueryResponse.getResults().stream()
                     .map(record -> RecordInfo.builder().id(record).kind(recordReindexRequest.getKind()).op(OperationType.create.name()).build()).collect(Collectors.toList());
             String recordChangedMessagePayload = this.replayReindexMsg(msgs, initialDelayMillis, headers);
@@ -104,6 +106,7 @@ public class ReindexServiceImpl implements ReindexService {
     @Override
     public Records reindexRecords(List<String> recordIds) {
         Records records = this.storageService.getStorageRecords(recordIds);
+        jaxRsDpsLog.info(String.format("Fetched total %s records for given %s record ids ", records.getTotalRecordCount(), recordIds.size()));
         if (!records.getRecords().isEmpty()) {
             List<RecordInfo> msgs = records.getRecords().stream()
                     .map(record -> RecordInfo.builder().id(record.getId()).kind(record.getKind()).op(OperationType.create.name()).build()).collect(Collectors.toList());
@@ -143,7 +146,7 @@ public class ReindexServiceImpl implements ReindexService {
             try {
                 reindexKind(new RecordReindexRequest(kind, ""), forceClean, true);
             } catch (Exception e) {
-                jaxRsDpsLog.warning(String.format("kind: %s cannot be re-indexed", kind));
+                jaxRsDpsLog.warning(String.format("kind: %s cannot be re-indexed due to exception: %s", kind, e.getMessage()));
                 continue;
             }
         }

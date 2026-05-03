@@ -14,23 +14,17 @@
 
 package org.opengroup.osdu.indexer.azure.cache;
 
-import org.opengroup.osdu.core.common.cache.RedisCache;
+import org.opengroup.osdu.azure.cache.RedisAzureCache;
+import org.opengroup.osdu.indexer.azure.di.RedisConfig;
 import org.opengroup.osdu.indexer.provider.interfaces.ISchemaCache;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import jakarta.inject.Named;
-
 @Component
 @ConditionalOnProperty(value = "runtime.env.local", havingValue = "false", matchIfMissing = true)
-public class SchemaRedisCache extends RedisCache<String, String> implements ISchemaCache<String, String> {
+public class SchemaRedisCache extends RedisAzureCache<String> implements ISchemaCache<String, String> {
 
-    public SchemaRedisCache(final @Named("REDIS_HOST") String host,
-                            final @Named("REDIS_PORT") int port,
-                            final @Named("REDIS_PASSWORD") String password,
-                            final @Named("SCHEMA_REDIS_TTL") int timeout,
-                            @Value("${redis.database}") final int database) {
-        super(host, port, password, timeout, database, String.class, String.class);
+    public SchemaRedisCache(final RedisConfig redisConfig) {
+        super(String.class, redisConfig.createConfiguration(redisConfig.getSchemaTtl()));
     }
 }

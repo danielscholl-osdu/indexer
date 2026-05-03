@@ -14,29 +14,42 @@
 
 package org.opengroup.osdu.indexer.logging;
 
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
+import org.opengroup.osdu.core.common.util.IpAddressUtil;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
-import jakarta.inject.Inject;
 import java.util.List;
 
 @Component
 @RequestScope
+@RequiredArgsConstructor
 public class AuditLogger {
 
-    @Inject
-    private JaxRsDpsLog logger;
-    @Inject
-    private DpsHeaders headers;
+    private final JaxRsDpsLog logger;
+    private final DpsHeaders headers;
+    //The presence of HttpServletRequest for audit events is not guaranteed if the events are processed outside the request scope
+    private final ObjectProvider<HttpServletRequest> requestProvider;
 
     private AuditEvents events = null;
 
     private AuditEvents getAuditEvents() {
         if (this.events == null) {
-            this.events = new AuditEvents(this.headers.getUserEmail());
+            String user = headers.getUserEmail();
+            String userAuthorizedGroupName = headers.getUserAuthorizedGroupName();
+            HttpServletRequest request = requestProvider.getIfAvailable();
+            if (request != null) {
+                String userIpAddress = IpAddressUtil.getClientIpAddress(request);
+                String userAgent = request.getHeader("User-Agent");
+                this.events = new AuditEvents(user, userIpAddress, userAgent, userAuthorizedGroupName);
+            } else {
+                this.events = new AuditEvents(user, null, null, userAuthorizedGroupName);
+            }
         }
         return this.events;
     }
@@ -114,11 +127,11 @@ public class AuditLogger {
     }
 
     public void indexMappingUpsertSuccess(List<String> resources) {
-        this.writeLog(this.getAuditEvents().getIndexMappingUpsertEvent(resources,true));
+        this.writeLog(this.getAuditEvents().getIndexMappingUpsertEvent(resources, true));
     }
 
     public void indexMappingUpsertFail(List<String> resources) {
-        this.writeLog(this.getAuditEvents().getIndexMappingUpsertEvent(resources,false));
+        this.writeLog(this.getAuditEvents().getIndexMappingUpsertEvent(resources, false));
     }
 
     public void getConfigurePartition(List<String> resources) {

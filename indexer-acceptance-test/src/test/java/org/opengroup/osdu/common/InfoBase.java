@@ -1,16 +1,31 @@
+/*
+ * Copyright 2017-2025, The Open Group
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opengroup.osdu.common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.opengroup.osdu.core.common.model.info.FeatureFlagStateResolver.FeatureFlagState;
 import org.opengroup.osdu.response.InfoResponseMock;
 import org.opengroup.osdu.util.Config;
@@ -63,7 +78,7 @@ public class InfoBase extends TestsBase {
     response =
             executeQuery(
                 this.getApi(),
-                Strings.EMPTY,
+                "",
                 headers,
                 httpClient.getAccessToken(),
                 InfoResponseMock.class);
@@ -71,7 +86,7 @@ public class InfoBase extends TestsBase {
 
   public void i_send_get_request_to_version_info_endpoint_with_trailing_slash() {
     response =
-            executeQuery(getApi()+"/", Strings.EMPTY, headers, httpClient.getAccessToken(), InfoResponseMock.class);
+            executeQuery(getApi()+"/", "", headers, httpClient.getAccessToken(), InfoResponseMock.class);
   }
 
   public void i_should_get_version_info_in_response() {

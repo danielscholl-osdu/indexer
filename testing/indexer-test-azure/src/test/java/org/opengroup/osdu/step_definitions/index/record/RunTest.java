@@ -14,14 +14,29 @@
 
 package org.opengroup.osdu.step_definitions.index.record;
 
-import cucumber.api.CucumberOptions;
-import cucumber.api.junit.Cucumber;
-import org.junit.runner.RunWith;
+import org.junit.platform.suite.api.ConfigurationParameter;
+import org.junit.platform.suite.api.IncludeEngines;
+import org.junit.platform.suite.api.IncludeTags;
+import org.junit.platform.suite.api.SelectPackages;
+import org.junit.platform.suite.api.Suite;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(
-        features = "classpath:features/indexrecord/indexRecord-schema-service.feature",
-        glue = {"classpath:org.opengroup.osdu.step_definitions/index/record"},
-        plugin = {"pretty", "junit:target/cucumber-reports/TEST-indexrecord.xml"})
+import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
+import static io.cucumber.junit.platform.engine.Constants.PARALLEL_EXECUTION_ENABLED_PROPERTY_NAME;
+import static io.cucumber.junit.platform.engine.Constants.EXECUTION_MODE_FEATURE_PROPERTY_NAME;
+
+// Parallel execution is enabled with EXECUTION_MODE_FEATURE = "concurrent". Different feature
+// files run in separate threads while scenarios within a feature run sequentially. All test data
+// uses timestamped record IDs and schema sources to ensure full isolation between parallel
+// scenarios — no shared state in Storage or Elasticsearch.
+//
+// Tags span multiple feature files (basic, text-search, coordinates). When more feature files
+// are added (dual-write, alias-switch, etc.), cross-feature parallelism will increase further.
+@Suite
+@IncludeEngines("cucumber")
+@SelectPackages("features.indexrecord")
+@IncludeTags({"default", "keyword-lower", "as-ingested-coordinates", "bag-of-words"})
+@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "org.opengroup.osdu.step_definitions.index.record,org.opengroup.osdu.config")
+@ConfigurationParameter(key = PARALLEL_EXECUTION_ENABLED_PROPERTY_NAME, value = "true")
+@ConfigurationParameter(key = EXECUTION_MODE_FEATURE_PROPERTY_NAME, value = "concurrent")
 public class RunTest {
 }

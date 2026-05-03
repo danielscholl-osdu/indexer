@@ -38,13 +38,12 @@ public class ElasticUtilsAws extends ElasticUtils {
     private static final int REST_CLIENT_RETRY_TIMEOUT = 60000;
 
     @Override
-    public RestClientBuilder createClientBuilder(String host, String usernameAndPassword, int port) {
+    public RestClientBuilder createClientBuilder(String host, String authHeaderValue, int port) {
         port = Integer.parseInt(System.getProperty("ELASTIC_PORT", System.getenv("ELASTIC_PORT")));
         RestClientBuilder builder = RestClient.builder(new HttpHost(host, port, "https"));
         builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder.setConnectTimeout(REST_CLIENT_CONNECT_TIMEOUT)
                 .setSocketTimeout(REST_CLIENT_SOCKET_TIMEOUT));
-        
-       
+
         //dont enforce CA/cert validity for tests
         SSLContext sslContext;            
         try {
@@ -59,13 +58,6 @@ public class ElasticUtilsAws extends ElasticUtils {
             log.error("Key management error.", e);
         }
 
-
-        String basicEncoded = Base64
-                            .getEncoder().encodeToString(usernameAndPassword.getBytes());
-        String basicAuthenticationHeaderVal = String.format("Basic %s", basicEncoded);
-
-    
-
         Header[] defaultHeaders = new Header[]{
                 new BasicHeader("client.transport.nodes_sampler_interval", "30s"),
                 new BasicHeader("client.transport.ping_timeout", "30s"),
@@ -73,7 +65,7 @@ public class ElasticUtilsAws extends ElasticUtils {
                 new BasicHeader("request.headers.X-Found-Cluster", Config.getElastic8Host()),
                 new BasicHeader("cluster.name", Config.getElastic8Host()),
                 new BasicHeader("xpack.security.transport.ssl.enabled", Boolean.toString(true)),
-                new BasicHeader("Authorization", basicAuthenticationHeaderVal),
+                new BasicHeader("Authorization", authHeaderValue),
         };
 
         builder.setDefaultHeaders(defaultHeaders);
