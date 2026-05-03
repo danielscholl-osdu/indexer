@@ -1,7 +1,24 @@
+/*
+ * Copyright 2017-2025, IBM
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opengroup.osdu.step_definitions.index.record;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,19 +39,36 @@ import org.opengroup.osdu.util.IBMHTTPClient;
 
 import com.google.gson.Gson;
 
-import cucumber.api.DataTable;
-import cucumber.api.Scenario;
-import cucumber.api.java.Before;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.DataTableType;
+import io.cucumber.java.Scenario;
+import io.cucumber.java.Before;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import lombok.extern.java.Log;
+
+import org.opengroup.osdu.models.Setup;
 
 @Log
 public class Steps extends SchemaServiceRecordSteps {
 
     public Steps() {
         super(new IBMHTTPClient(), new ElasticUtils());
+    }
+
+    @DataTableType
+    public Setup setupEntry(Map<String, String> entry) {
+        Setup setup = new Setup();
+        setup.setTenantId(entry.get("tenantId"));
+        setup.setKind(entry.get("kind"));
+        setup.setIndex(entry.get("index"));
+        setup.setViewerGroup(entry.get("viewerGroup"));
+        setup.setOwnerGroup(entry.get("ownerGroup"));
+        setup.setMappingFile(entry.get("mappingFile"));
+        setup.setRecordFile(entry.get("recordFile"));
+        setup.setSchemaFile(entry.get("schemaFile"));
+        return setup;
     }
 
     @Before
@@ -92,7 +126,7 @@ public class Steps extends SchemaServiceRecordSteps {
     public void iShouldGetTheNumberDocumentsForTheIndexInTheElasticSearchWithOutSkippedAttribute(int expectedCount, String index, String skippedAttributes) throws Throwable {
         super.iShouldGetTheNumberDocumentsForTheIndexInTheElasticSearchWithOutSkippedAttribute(expectedCount, index, skippedAttributes);
     }
-    
+
     @Then("^I should be able to search (\\d+) record with index \"([^\"]*)\" by tag \"([^\"]*)\" and value \"([^\"]*)\"$")
     public void iShouldBeAbleToSearchRecordByTagKeyAndTagValue(int expectedNumber, String index, String tagKey, String tagValue) throws Throwable {
         super.iShouldBeAbleToSearchRecordByTagKeyAndTagValue(index, tagKey, tagValue, expectedNumber);
@@ -134,47 +168,47 @@ public class Steps extends SchemaServiceRecordSteps {
         throws Throwable {
         super.i_should_get_object_in_search_response_without_hints_in_schema(objectInnerField ,index, recordFile, acl, kind);
     }
-    
+
     @When("^I pass api key$")
     public void i_pass_the_api_key() {
     }
-    
+
     @Then("^compare with key configured in properties file$")
     public void compare_with_key_configured_in_propertiesFile() throws Throwable {
-    	
+
     	final String CORRELATION_ID = "1234";
         final String OPENDES = "opendes";
     	final Gson gson = new Gson();
-    	
+
     	String INDEXER_API_KEY = Config.getEnvironmentVariable("INDEXER_API_KEY");
     	String INDEXER_HOST_URL = Config.getEnvironmentVariable("INDEXER_HOST_URL");
-    	
+
     	RecordChangedMessages recordChangeMessage = new RecordChangedMessages();
-    	
+
     	String data = "[{\"id\":\"opendes:doc:1234\",\"kind\":\"opendes:test:test:1.0.0\",\"op\":\"create\"}]";
-    	
+
     	Map<String, String> attributes = new HashMap<>();
     	attributes.put("correlation-id", CORRELATION_ID);
     	attributes.put("data-partition-id", OPENDES);
     	recordChangeMessage.setAttributes(attributes);
     	recordChangeMessage.setData(data);
-    	
+
     	String url = StringUtils.join(INDEXER_HOST_URL, Constants.WORKER_RELATIVE_URL);
 		HttpClient httpClient = new HttpClient();
 		DpsHeaders dpsHeaders = new DpsHeaders();
 		dpsHeaders.put("x-api-key", INDEXER_API_KEY);
 		dpsHeaders.put("correlation-id", CORRELATION_ID);
 		dpsHeaders.put("data-partition-id", OPENDES);
-		
+
 		HttpRequest rq = HttpRequest.post(recordChangeMessage).url(url).headers(dpsHeaders.getHeaders()).build();
 		HttpResponse result = httpClient.send(rq);
 		if(result.hasException() == false && result.getResponseCode() == 500) {
-			assertTrue(result.getResponseCode() == 500);
+			assertEquals(500, result.getResponseCode());
 		} else {
 			AppError error = gson.fromJson(result.getBody(), AppError.class);
-			assertFalse("Token is mismatched", error.getCode() == 401);
+			assertFalse(error.getCode() == 401, "Token is mismatched");
 		}
-		
+
     }
 
     @Then("^I should be able to search for record from \"([^\"]*)\" by \"([^\"]*)\" for value \"([^\"]*)\" and find String arrays in \"([^\"]*)\" with \"([^\"]*)\"$")

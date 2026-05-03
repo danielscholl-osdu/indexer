@@ -1,10 +1,25 @@
+/*
+ * Copyright 2017-2025, The Open Group
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.opengroup.osdu.common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +35,6 @@ import org.opengroup.osdu.util.HTTPClient;
 @Slf4j
 public class InfoBase extends TestsBase {
 
-  // Feature flag property constant - matches the value used in FeatureConstants
   private static final String EXPOSE_FEATUREFLAG_ENABLED_PROPERTY = "expose_featureflag.enabled";
 
   private static final List<String> expectedFeatureFlags = List.of(
@@ -87,24 +101,22 @@ public class InfoBase extends TestsBase {
       List<FeatureFlagStateMock> featureFlagStates = response.getFeatureFlagStates();
 
       // Read the actual configuration property value to validate behavior alignment
-      // Check system property first, then fall back to environment variable
       String featureFlagExposeEnabledProperty = System.getProperty(EXPOSE_FEATUREFLAG_ENABLED_PROPERTY);
       if (featureFlagExposeEnabledProperty == null) {
           featureFlagExposeEnabledProperty = System.getenv("EXPOSE_FEATUREFLAG_ENABLED");
       }
-      boolean isFeatureFlagExposureEnabled = featureFlagExposeEnabledProperty == null || !"false".equalsIgnoreCase(featureFlagExposeEnabledProperty);
-      
-      if (!isFeatureFlagExposureEnabled)
-      {
+      boolean isFeatureFlagExposureEnabled = featureFlagExposeEnabledProperty == null
+          || !"false".equalsIgnoreCase(featureFlagExposeEnabledProperty);
+
+      if (!isFeatureFlagExposureEnabled) {
         assertNull(featureFlagStates);
-      }
-      else
-      {
+      } else {
         assertNotNull(featureFlagStates);
         assertFalse(featureFlagStates.isEmpty());
-        for (String ffName : expectedFeatureFlags){
-          assertTrue(featureFlagStates.stream().anyMatch(ffState -> ffState.getName().equals(ffName)));    
-        }    
+        for (String ffName : expectedFeatureFlags) {
+          assertTrue(featureFlagStates.stream().anyMatch(ffState -> ffState.getName().equals(ffName)),
+              "Expected feature flag not found: " + ffName);
+        }
       }
     } else {
       log.warn("Version info endpoint provided null response");

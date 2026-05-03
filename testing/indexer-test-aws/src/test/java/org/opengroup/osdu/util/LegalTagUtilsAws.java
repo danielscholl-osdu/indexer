@@ -15,15 +15,12 @@
 
 package org.opengroup.osdu.util;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.apache.http.HttpStatus;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.sun.jersey.api.client.ClientResponse;
-
-import javax.ws.rs.HttpMethod;
 
 public class LegalTagUtilsAws {
 
@@ -35,22 +32,22 @@ public class LegalTagUtilsAws {
         return Config.getDataPartitionIdTenant1() + "-" + System.currentTimeMillis();
     }
 
-    public ClientResponse create(String legalTagName) throws Exception {
+    public HttpResponse create(String legalTagName) throws Exception {
         return this.create("US", legalTagName, "2099-01-25", "Public Domain Data");
     }
 
-    protected ClientResponse create(String countryOfOrigin, String name, String expDate, String dataType)
+    protected HttpResponse create(String countryOfOrigin, String name, String expDate, String dataType)
             throws Exception {
         String body = getBody(countryOfOrigin, name, expDate, dataType);
-        ClientResponse response = this.httpClient.send(HttpMethod.POST, String.format("%s%s",getLegalUrl(), "legaltags"), body, httpClient.getCommonHeader(), httpClient.getAccessToken());
+        HttpResponse response = this.httpClient.send("POST", String.format("%s%s",getLegalUrl(), "legaltags"), body, httpClient.getCommonHeader(), httpClient.getAccessToken());
 
         assertEquals(HttpStatus.SC_CREATED, response.getStatus());
         Thread.sleep(100);
         return response;
     }
 
-    public ClientResponse delete(String legalTagName) {
-        return this.httpClient.send(HttpMethod.DELETE ,getLegalUrl(), "legaltags/" + legalTagName,httpClient.getCommonHeader(), httpClient.getAccessToken());
+    public HttpResponse delete(String legalTagName) {
+        return this.httpClient.send("DELETE" ,getLegalUrl(), "legaltags/" + legalTagName,httpClient.getCommonHeader(), httpClient.getAccessToken());
     }
 
     protected static String getLegalUrl() {

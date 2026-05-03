@@ -32,7 +32,7 @@
 
     <properties>
         <os-core-lib-ibm.version>0.26.0-rc8</os-core-lib-ibm.version>
-        <os-core-common.version>3.6.1</os-core-common.version>
+        <os-core-common.version>5.3.0</os-core-common.version>
     </properties>	
     
     <profiles>
@@ -96,7 +96,6 @@
         <dependency>
         	<groupId>io.netty</groupId>
             <artifactId>netty-codec</artifactId>
-            <version>4.1.118.Final</version>
         </dependency>
    		<dependency>
    			<groupId>org.opengroup.osdu</groupId>
@@ -200,19 +199,6 @@
          </dependency>
 
     </dependencies>
-    <dependencyManagement>
-        <dependencies>
-            <!-- https://mvnrepository.com/artifact/io.netty/netty-bom -->
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-bom</artifactId>
-                <version>4.1.118.Final</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>

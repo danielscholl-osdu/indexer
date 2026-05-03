@@ -1,14 +1,27 @@
+/*
+ * Copyright 2017-2025, The Open Group
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.opengroup.osdu.models;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
-import com.sun.jersey.api.client.ClientResponse;
 import lombok.Data;
 
-import javax.ws.rs.HttpMethod;
-
 import org.opengroup.osdu.util.HTTPClient;
+import org.opengroup.osdu.util.HttpResponse;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.util.ElasticUtils;
@@ -21,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.opengroup.osdu.util.Config.*;
 import static org.opengroup.osdu.util.HTTPClient.indentatedResponseBody;
 
@@ -60,17 +73,17 @@ public class TestIndex {
     }
 
     public void setupSchema() {
-        ClientResponse clientResponse = this.httpClient.send(HttpMethod.POST, getStorageBaseURL() + "schemas", this.getStorageSchemaFromJson(), headers, httpClient.getAccessToken());
-        if (clientResponse.getType() != null) {
-            LOGGER.info(String.format("Response status: %s, type: %s\nResponse body: %s", clientResponse.getStatus(), clientResponse.getType().toString(), indentatedResponseBody(clientResponse.getEntity(String.class))));
+        HttpResponse httpResponse = this.httpClient.send("POST", getStorageBaseURL() + "schemas", this.getStorageSchemaFromJson(), headers, httpClient.getAccessToken());
+        if (httpResponse.getType() != null) {
+            LOGGER.info(String.format("Response status: %s, type: %s\nResponse body: %s", httpResponse.getStatus(), httpResponse.getType(), indentatedResponseBody(httpResponse.getEntity(String.class))));
         }
     }
 
     public void deleteSchema(String kind) {
-        ClientResponse clientResponse = this.httpClient.send(HttpMethod.DELETE, getStorageBaseURL() + "schemas/" + kind, null, headers, httpClient.getAccessToken());
-        assertEquals(204, clientResponse.getStatus());
-        if (clientResponse.getType() != null)
-            LOGGER.info(String.format("Response status: %s, type: %s", clientResponse.getStatus(), clientResponse.getType().toString()));
+        HttpResponse httpResponse = this.httpClient.send("DELETE", getStorageBaseURL() + "schemas/" + kind, null, headers, httpClient.getAccessToken());
+        assertEquals(204, httpResponse.getStatus());
+        if (httpResponse.getType() != null)
+            LOGGER.info(String.format("Response status: %s, type: %s", httpResponse.getStatus(), httpResponse.getType()));
     }
 
     public void addIndex() {

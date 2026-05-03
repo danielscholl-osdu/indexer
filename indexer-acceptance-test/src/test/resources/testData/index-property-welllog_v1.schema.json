@@ -2,7 +2,7 @@
     "schemaInfo": {
         "schemaIdentity": {
 			"authority": "test",
-            "source": "indexer",
+            "source": "indexer<timestamp>",
             "entityType": "index-property--WellLog",
             "schemaVersionMajor": 1,
             "schemaVersionMinor": 0,

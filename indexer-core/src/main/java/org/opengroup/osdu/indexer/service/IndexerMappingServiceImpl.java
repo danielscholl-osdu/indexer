@@ -29,7 +29,6 @@ import jakarta.inject.Inject;
 import org.opengroup.osdu.core.common.Constants;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.indexer.ElasticType;
 import org.opengroup.osdu.core.common.model.indexer.IndexSchema;
 import org.opengroup.osdu.core.common.model.search.RecordMetaAttribute;
 import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
@@ -85,6 +84,24 @@ public class IndexerMappingServiceImpl extends MappingServiceImpl implements IMa
     public String createMapping(ElasticsearchClient client, IndexSchema schema, String index, boolean merge) throws IOException {
 
         Map<String, Object> mappingMap = this.getIndexMappingFromRecordSchema(schema);
+
+        // When merging, exclude bagOfWords field to avoid analyzer conflicts on existing indices.
+        // The bagOfWords field uses a completion type with an analyzer that cannot be changed on
+        // existing indices. Schema-derived copy_to attributes on data fields are still included.
+        if (merge) {
+            Object propertiesObject = mappingMap.get(Constants.PROPERTIES);
+            if (propertiesObject instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> props = (Map<String, Object>) propertiesObject;
+                if (props.containsKey(BAG_OF_WORDS.getValue())) {
+                    props.remove(BAG_OF_WORDS.getValue());
+                    log.info("Excluded bagOfWords from mapping merge to avoid potential analyzer conflicts");
+                }
+            } else {
+                log.warning("Expected a Map for properties but found: " + (propertiesObject != null ? propertiesObject.getClass().getName() : "null"));
+            }
+        }
+
         String mapping = new Gson().toJson(mappingMap, Map.class);
         this.createMappingWithJson(client, index, schema.getType(), mapping, merge);
         return mapping;
@@ -204,6 +221,7 @@ public class IndexerMappingServiceImpl extends MappingServiceImpl implements IMa
             //In case the format of cache changes then clean the cache
             this.indexCache.delete(cacheKey);
         }
+        log.info(String.format("Syncing Index Mapping for kind %s, index %s", schema.getKind(), index));
 
         // retrieve a mapping for a given index
         String jsonResponse = this.getIndexMapping(restClient, index);
@@ -221,13 +239,18 @@ public class IndexerMappingServiceImpl extends MappingServiceImpl implements IMa
         List<String> missingFields = getMissingFields(props);
         postProcessMissingFields(missingFields);
 
-        // put missingFields attributes into properties (which is a mapping for a given index)
+        if (missingFields.isEmpty()) {
+            this.indexCache.put(cacheKey, true);
+            return;
+        }
+
         Map<String, Object> properties = new HashMap<>();
         Kind kind = new Kind(schema.getKind());
         for (String attribute : missingFields) {
-            if (attribute.equals(RecordMetaAttribute.AUTHORITY.getValue())) {
+            if (RecordMetaAttribute.AUTHORITY.getValue().equals(attribute)) {
                 properties.put(attribute, TypeMapper.getMetaAttributeIndexerMapping(attribute, kind.getAuthority()));
-            } else if (attribute.equals(RecordMetaAttribute.SOURCE.getValue())) {
+                log.info(String.format("Syncing Index Mapping for kind %s, Authority %s, index %s", schema.getKind(), kind.getAuthority(), index));
+            } else if (RecordMetaAttribute.SOURCE.getValue().equals(attribute)) {
                 properties.put(attribute, TypeMapper.getMetaAttributeIndexerMapping(attribute, kind.getSource()));
             } else {
                 properties.put(attribute, TypeMapper.getMetaAttributeIndexerMapping(attribute, null));
@@ -235,15 +258,27 @@ public class IndexerMappingServiceImpl extends MappingServiceImpl implements IMa
         }
         boolean bagOfWordsEnabled = this.featureFlagChecker.isFeatureEnabled(BAG_OF_WORDS_FEATURE_NAME);
         if (bagOfWordsEnabled) {
-            // sync data-source attributes
-            Map<String, Object> dataMapping = this.getDataMapping(schema);
-            if (!dataMapping.isEmpty()) {
-                // inner properties.data.properties block
-                Map<String, Object> dataProperties = new HashMap<>();
-                dataProperties.put(Constants.PROPERTIES, dataMapping);
+            // sync data-source attributes, but only text/keyword fields that use copy_to for bag-of-words
+            // numeric, date, and other types don't benefit from bag-of-words and shouldn't be synced
+            // to avoid mapping conflicts when field types change (e.g., long -> double)
+            Map<String, Object> filteredDataSchema = filterTextAndKeywordFields(schema.getDataSchema());
+            if (!filteredDataSchema.isEmpty()) {
+                IndexSchema filteredSchema = IndexSchema.builder()
+                    .kind(schema.getKind())
+                    .type(schema.getType())
+                    .dataSchema(filteredDataSchema)
+                    .metaSchema(new HashMap<>())
+                    .build();
 
-                // data & meta block
-                properties.put(Constants.DATA, dataProperties);
+                Map<String, Object> dataMapping = this.getDataMapping(filteredSchema);
+                if (!dataMapping.isEmpty()) {
+                    // inner properties.data.properties block
+                    Map<String, Object> dataProperties = new HashMap<>();
+                    dataProperties.put(Constants.PROPERTIES, dataMapping);
+
+                    // data & meta block
+                    properties.put(Constants.DATA, dataProperties);
+                }
             }
         }
 
@@ -257,6 +292,7 @@ public class IndexerMappingServiceImpl extends MappingServiceImpl implements IMa
 
         String mapping = new Gson().toJson(documentMapping, Map.class);
         this.createMappingWithJson(restClient, index, "_doc", mapping, true);
+        log.info(String.format("Creating Mapping for index %s, %s", index, mapping));
 
         this.indexCache.put(cacheKey, true);
     }
@@ -353,5 +389,40 @@ public class IndexerMappingServiceImpl extends MappingServiceImpl implements IMa
             throw new ElasticsearchMappingException("Failed to create mapping: " + e.getMessage(), e.status());
         }
         return false;
+    }
+
+    /**
+     * Filter data schema to only include text and keyword fields.
+     * Only text and keyword fields benefit from bag-of-words copy_to functionality.
+     * Numeric, date, and other types don't use copy_to, so syncing them is unnecessary
+     * and can cause mapping conflicts when field types change.
+     *
+     * @param dataSchema The data schema map from IndexSchema
+     * @return Filtered map containing only text and keyword type fields
+     */
+    private Map<String, Object> filterTextAndKeywordFields(Map<String, Object> dataSchema) {
+        if (dataSchema == null || dataSchema.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        Map<String, Object> filtered = new HashMap<>();
+        for (Map.Entry<String, Object> entry : dataSchema.entrySet()) {
+            Object value = entry.getValue();
+            if (value == null) {
+                continue;
+            }
+
+            String valueStr = value.toString().toLowerCase();
+            // Include text, keyword, and their array variants
+            // These are the only types that get copy_to in TypeMapper.getDataAttributeIndexerMapping
+            if (valueStr.equals("text") ||
+                valueStr.equals("keyword") ||
+                valueStr.equals("text_array") ||
+                valueStr.equals("keyword_array")) {
+                filtered.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return filtered;
     }
 }

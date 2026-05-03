@@ -2,7 +2,7 @@
     "schemaInfo": {
         "schemaIdentity": {
             "authority": "test",
-            "source": "indexer",
+            "source": "indexer<timestamp>",
             "entityType": "index-property--Wellbore",
             "schemaVersionMajor": 1,
             "schemaVersionMinor": 0,

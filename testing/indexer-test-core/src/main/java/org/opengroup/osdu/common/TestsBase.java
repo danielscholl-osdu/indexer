@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017-2025, The Open Group
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.opengroup.osdu.common;
 
 import com.google.gson.Gson;
@@ -8,17 +23,15 @@ import org.opengroup.osdu.models.TestIndex;
 import org.opengroup.osdu.response.ResponseBase;
 import org.opengroup.osdu.util.ElasticUtils;
 import org.opengroup.osdu.util.HTTPClient;
+import org.opengroup.osdu.util.HttpResponse;
 
-import com.sun.jersey.api.client.ClientResponse;
-import cucumber.api.Scenario;
+import io.cucumber.java.Scenario;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.util.IndexerClientUtil;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import java.util.*;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opengroup.osdu.util.Config.*;
 import static org.opengroup.osdu.util.HTTPClient.indentatedResponseBody;
 
@@ -108,24 +121,24 @@ public abstract class TestsBase {
     protected abstract String getHttpMethod();
 
     protected <T extends ResponseBase> T executeQuery(String api, String payLoad, Map<String, String> headers, String token, Class<T> typeParameterClass) {
-        ClientResponse clientResponse = httpClient.send(this.getHttpMethod(), api, payLoad, headers, token);
-        logCorrelationIdWithFunctionName(clientResponse.getHeaders());
-        return getResponse(clientResponse, typeParameterClass);
+        HttpResponse httpResponse = httpClient.send(this.getHttpMethod(), api, payLoad, headers, token);
+        logCorrelationIdWithFunctionName(httpResponse.getHeaders());
+        return getResponse(httpResponse, typeParameterClass);
     }
 
-    private <T extends ResponseBase> T getResponse(ClientResponse clientResponse, Class<T> typeParameterClass) {
-        log.info(String.format("Response status: %s, type: %s", clientResponse.getStatus(), clientResponse.getType().toString()));
-        assertTrue(clientResponse.getType().toString().contains(MediaType.APPLICATION_JSON));
-        String responseEntity = clientResponse.getEntity(String.class);
+    private <T extends ResponseBase> T getResponse(HttpResponse httpResponse, Class<T> typeParameterClass) {
+        log.info(String.format("Response status: %s, type: %s", httpResponse.getStatus(), httpResponse.getType()));
+        assertTrue(httpResponse.getType().contains("application/json"));
+        String responseEntity = httpResponse.getEntity(String.class);
 
         T response = new Gson().fromJson(responseEntity, typeParameterClass);
-        response.setHeaders(clientResponse.getHeaders());
-        response.setResponseCode(clientResponse.getStatus());
+        response.setHeaders(httpResponse.getHeaders());
+        response.setResponseCode(httpResponse.getStatus());
         log.info(String.format("Response body: %s\nCorrelation id: %s\nResponse Status code: %s", indentatedResponseBody(responseEntity), response.getHeaders().get("correlation-id"), response.getResponseCode()));
         return response;
     }
 
-    private void logCorrelationIdWithFunctionName(MultivaluedMap<String, String> headers) {
+    private void logCorrelationIdWithFunctionName(Map<String, List<String>> headers) {
         log.info(String.format("Scenario Name: %s, Correlation-Id: %s", scenario.getId(), headers.get("correlation-id")));
     }
 
@@ -137,7 +150,7 @@ public abstract class TestsBase {
     }
 
     protected String generateActualId(String rawName, String timeStamp, String kind) {
-        
+
         rawName = generateActualName(rawName, timeStamp);
 
         String kindSubType = kind.split(":")[2];

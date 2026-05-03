@@ -15,6 +15,11 @@
 package org.opengroup.osdu.indexer.service;
 
 import static org.opengroup.osdu.indexer.model.Constants.AS_INGESTED_COORDINATES_FEATURE_NAME;
+import static org.opengroup.osdu.indexer.util.ElasticsearchBulkErrorUtils.DOCUMENT_PARSING_EXCEPTION;
+import static org.opengroup.osdu.indexer.util.ElasticsearchBulkErrorUtils.MAPPER_PARSING_EXCEPTION;
+import static org.opengroup.osdu.indexer.util.ElasticsearchBulkErrorUtils.buildErrorReason;
+import static org.opengroup.osdu.indexer.util.ElasticsearchBulkErrorUtils.incrementParsingExceptionFallbackCounter;
+import static org.opengroup.osdu.indexer.util.ElasticsearchBulkErrorUtils.isParsingException;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -28,6 +33,7 @@ import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -130,6 +136,8 @@ public class IndexerServiceImpl implements IndexerService {
     private JobStatus jobStatus;
     @Inject
     private AugmenterConfigurationService augmenterConfigurationService;
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
     @Inject
     private AugmenterSetting augmenterSetting;
 
@@ -700,11 +708,11 @@ public class IndexerServiceImpl implements IndexerService {
                     String failureMessage = String.format("elasticsearch bulk service status: %s | id: %s | message: %s",
                         bulkItemResponse.status(),
                         bulkItemResponse.id(),
-                        bulkItemResponse.error().reason());
+                        buildErrorReason(bulkItemResponse.error()));
                     bulkFailures.add(failureMessage);
-                    this.jobStatus.addOrUpdateRecordStatus(bulkItemResponse.id(), IndexingStatus.FAIL, bulkItemResponse.status(), bulkItemResponse.error().reason());
+                    this.jobStatus.addOrUpdateRecordStatus(bulkItemResponse.id(), IndexingStatus.FAIL, bulkItemResponse.status(), buildErrorReason(bulkItemResponse.error()));
 
-                    if (bulkItemResponse.status() == HttpStatus.SC_BAD_REQUEST && bulkItemResponse.error().reason().contains(MAPPER_PARSING_EXCEPTION_TYPE)) {
+                    if (bulkItemResponse.status() == HttpStatus.SC_BAD_REQUEST && isParsingException(bulkItemResponse.error())) {
                         retryUpsertRecordIds.add(bulkItemResponse.id());
                     } else if (canIndexerRetry(bulkItemResponse)) {
                         failureRecordIds.add(bulkItemResponse.id());

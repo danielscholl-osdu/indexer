@@ -204,7 +204,8 @@ public class ElasticUtils {
                         try {
                             Thread.sleep(12000);
                         } catch (InterruptedException e1) {
-                            e1.printStackTrace();
+                            log.warning("Interrupted during index deletion wait: " + e1.getMessage());
+                            Thread.currentThread().interrupt();
                         }
                     } else {
                         closeIndex(client, index);
@@ -554,6 +555,69 @@ public class ElasticUtils {
             log.info(String.format("index: %s refresh failed. message: %s", index, exception.getMessage()));
         }
 
+    }
+
+    public boolean waitForIndexReady(String index, int timeoutSeconds) throws IOException {
+        ElasticsearchClient client = this.getOrCreateClient(username, password, host);
+        try {
+            co.elastic.clients.elasticsearch.cluster.HealthRequest healthRequest = 
+                co.elastic.clients.elasticsearch.cluster.HealthRequest.of(b -> b
+                    .index(index)
+                    .waitForStatus(co.elastic.clients.elasticsearch._types.HealthStatus.Yellow)
+                    .timeout(Time.of(t -> t.time(timeoutSeconds + "s"))));
+            co.elastic.clients.elasticsearch.cluster.HealthResponse response = client.cluster().health(healthRequest);
+            return response.status() == co.elastic.clients.elasticsearch._types.HealthStatus.Green 
+                || response.status() == co.elastic.clients.elasticsearch._types.HealthStatus.Yellow;
+        } catch (ElasticsearchException e) {
+            log.info(String.format("Health check failed for index %s: %s", index, e.getMessage()));
+            return false;
+        }
+    }
+
+    public boolean aliasExists(String aliasName) throws IOException {
+        ElasticsearchClient client = this.getOrCreateClient(username, password, host);
+        try {
+            co.elastic.clients.elasticsearch.indices.ExistsAliasRequest request = 
+                co.elastic.clients.elasticsearch.indices.ExistsAliasRequest.of(b -> b.name(aliasName));
+            return client.indices().existsAlias(request).value();
+        } catch (ElasticsearchException e) {
+            log.info(String.format("Alias check failed for %s: %s", aliasName, e.getMessage()));
+            return false;
+        }
+    }
+
+    public String getPhysicalIndexFromAlias(String aliasName) throws IOException {
+        ElasticsearchClient client = this.getOrCreateClient(username, password, host);
+        try {
+            co.elastic.clients.elasticsearch.indices.GetAliasRequest request = 
+                co.elastic.clients.elasticsearch.indices.GetAliasRequest.of(b -> b.name(aliasName));
+            co.elastic.clients.elasticsearch.indices.GetAliasResponse response = client.indices().getAlias(request);
+            return response.result().keySet().stream().findFirst().orElse(null);
+        } catch (ElasticsearchException e) {
+            log.info(String.format("Get alias failed for %s: %s", aliasName, e.getMessage()));
+            return null;
+        }
+    }
+
+    public boolean physicalIndexExists(String indexName) throws IOException {
+        return isIndexExist(indexName);
+    }
+
+    public boolean checkMappingFieldsExist(String indexName, String[] fieldNames) throws IOException {
+        try {
+            Map<String, IndexMappingRecord> mapping = getMapping(indexName);
+            if (mapping == null || mapping.isEmpty()) return false;
+            IndexMappingRecord record = mapping.values().iterator().next();
+            if (record.mappings() == null || record.mappings().properties() == null) return false;
+            Map<String, ?> props = record.mappings().properties();
+            for (String field : fieldNames) {
+                if (!props.containsKey(field)) return false;
+            }
+            return true;
+        } catch (Exception e) {
+            log.info(String.format("Mapping fields check failed for %s: %s", indexName, e.getMessage()));
+            return false;
+        }
     }
 
     private boolean closeIndex(ElasticsearchClient client, String index) {

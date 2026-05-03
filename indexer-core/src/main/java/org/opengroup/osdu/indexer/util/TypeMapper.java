@@ -145,17 +145,19 @@ public class TypeMapper {
         if (isMap(indexerType)) {
             Map<String, Object> type = (Map<String, Object>) indexerType;
             Map<String, Object> propertiesMap = (Map<String, Object>) type.get(Constants.PROPERTIES);
-            for (Map.Entry<String, Object> entry : propertiesMap.entrySet()) {
-                if (isMap(entry.getValue())) {
-                    entry.setValue(getDataAttributeIndexerMapping(entry.getValue(), keywordLowerEnabled, bagOfWordsEnabled, customIndexAnalyzerEnabled));
-                } else if (ElasticType.TEXT.getValue().equalsIgnoreCase(String.valueOf(entry.getValue()))) {
-                    entry.setValue(getTextIndexerMapping(keywordLowerEnabled, bagOfWordsEnabled, customIndexAnalyzerEnabled));
-                } else if (ElasticType.KEYWORD.getValue().equalsIgnoreCase(String.valueOf(entry.getValue()))) {
-                    entry.setValue(getKeywordIndexerMapping(bagOfWordsEnabled));
-                } else if (isArray(String.valueOf(entry.getValue()))) {
-                    entry.setValue(Records.Type.builder().type(getArrayMemberType(String.valueOf(entry.getValue()))).build());
-                } else {
-                    entry.setValue(Records.Type.builder().type(entry.getValue().toString()).build());
+            if (propertiesMap != null) {
+                for (Map.Entry<String, Object> entry : propertiesMap.entrySet()) {
+                    if (isMap(entry.getValue())) {
+                        entry.setValue(getDataAttributeIndexerMapping(entry.getValue(), keywordLowerEnabled, bagOfWordsEnabled, customIndexAnalyzerEnabled));
+                    } else if (ElasticType.TEXT.getValue().equalsIgnoreCase(String.valueOf(entry.getValue()))) {
+                        entry.setValue(getTextIndexerMapping(keywordLowerEnabled, bagOfWordsEnabled, customIndexAnalyzerEnabled));
+                    } else if (ElasticType.KEYWORD.getValue().equalsIgnoreCase(String.valueOf(entry.getValue()))) {
+                        entry.setValue(getKeywordIndexerMapping(bagOfWordsEnabled));
+                    } else if (isArray(String.valueOf(entry.getValue()))) {
+                        entry.setValue(Records.Type.builder().type(getArrayMemberType(String.valueOf(entry.getValue()))).build());
+                    } else {
+                        entry.setValue(Records.Type.builder().type(entry.getValue().toString()).build());
+                    }
                 }
             }
             return indexerType;
